@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#4F6BED">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>计划看板 · 目标拆解工作台</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -790,6 +793,10 @@ function saveGoals(d){ saveData(KEYS.goals, d); }
 function saveWeekly(d){ saveData(KEYS.weekly, d); }
 function saveTodos(d){ saveData(KEYS.todos, d); }
 
+function normalizePriority(p){
+  return String(p || 'P2').trim().toUpperCase();
+}
+
 /* ========== Date Utils ========== */
 function pad(n){ return String(n).padStart(2,'0'); }
 function fmtDate(d){
@@ -931,7 +938,8 @@ function renderToday(){
   const today = todayStr();
   const tomorrow = fmtDate(new Date(Date.now()+86400000));
   const order = { P0:0, P1:1, P2:2 };
-  const sortByPriority = (arr) => arr.sort((a,b) => (order[a.priority]||2) - (order[b.priority]||2));
+  const priorityVal = (t) => order[normalizePriority(t.priority)] ?? 2;
+  const sortByPriority = (arr) => arr.sort((a,b) => priorityVal(a) - priorityVal(b));
 
   const overdue = sortByPriority(todos.filter(t => !t.completed && t.rolledFrom));
   const todayItems = sortByPriority(todos.filter(t => t.date === today && !t.rolledFrom));
@@ -971,14 +979,15 @@ function renderToday(){
 }
 
 function renderTodayItem(t, isOverdue, isUpcoming){
-  const pClass = 'tag-'+t.priority.toLowerCase();
+  const pNorm = normalizePriority(t.priority);
+  const pClass = 'tag-'+pNorm.toLowerCase();
   const rolledFlag = t.rolledFrom ? '<span class="rolled-flag">顺延自 '+t.rolledFrom+'</span>' : '';
   return '<div class="today-item'+(isOverdue?' overdue':'')+'" data-todo-id="'+t.id+'">'
     + '<div class="today-checkbox'+(t.completed?' checked':'')+'" onclick="toggleTodo(\''+t.id+'\')">'+(t.completed?IC.check:'')+'</div>'
     + '<div class="today-item-info">'
     +   '<div class="today-item-title'+(t.completed?' done':'')+'">'+escapeHtml(t.title)+'</div>'
     +   '<div class="today-item-meta">'
-    +     '<span class="today-item-tag '+pClass+'">'+t.priority+'</span>'
+    +     '<span class="today-item-tag '+pClass+'">'+pNorm+'</span>'
     +     rolledFlag
     +   '</div>'
     + '</div>'
@@ -1075,9 +1084,10 @@ function renderTodos(){
   }
 
   const order = { P0:0, P1:1, P2:2 };
+  const priorityVal = (t) => order[normalizePriority(t.priority)] ?? 2;
   todos.sort((a,b) => {
     if(a.completed !== b.completed) return a.completed ? 1 : -1;
-    return (order[a.priority]||2) - (order[b.priority]||2);
+    return priorityVal(a) - priorityVal(b);
   });
 
   const allWeekly = getWeekly();
@@ -1085,7 +1095,8 @@ function renderTodos(){
 
   let html = '';
   todos.forEach(t => {
-    const pLower = t.priority.toLowerCase();
+    const pNorm = normalizePriority(t.priority);
+    const pLower = pNorm.toLowerCase();
     const wk = t.weeklyId ? allWeekly.find(w => w.id === t.weeklyId) : null;
     const goal = wk ? allGoals.find(g => g.id === wk.goalId) : null;
     const rolledFlag = t.rolledFrom ? '<span class="rolled-flag">顺延自 '+t.rolledFrom+'</span>' : '';
@@ -1097,7 +1108,7 @@ function renderTodos(){
     html += '<div class="todo-content">';
     html += '<div class="todo-title'+(t.completed?' done':'')+'">'+escapeHtml(t.title)+'</div>';
     html += '<div class="todo-meta">';
-    html += '<span class="today-item-tag tag-'+pLower+'">'+t.priority+'</span>';
+    html += '<span class="today-item-tag tag-'+pLower+'">'+pNorm+'</span>';
     if(wk) html += '<span class="todo-link">'+IC.link+escapeHtml(wk.title)+'</span>';
     html += rolledFlag;
     html += '</div></div>';
@@ -1235,9 +1246,9 @@ function renderPriorityDist(todos){
   const el = document.getElementById('priorityDist');
   const priorities = ['P0','P1','P2'];
   let html = '';
-  const maxCount = Math.max(...priorities.map(p => todos.filter(t => t.priority === p).length), 1);
+  const maxCount = Math.max(...priorities.map(p => todos.filter(t => normalizePriority(t.priority) === p).length), 1);
   priorities.forEach(p => {
-    const items = todos.filter(t => t.priority === p);
+    const items = todos.filter(t => normalizePriority(t.priority) === p);
     const done = items.filter(t => t.completed).length;
     const total = items.length;
     const pct = total > 0 ? Math.round(done/total*100) : 0;
@@ -1466,7 +1477,7 @@ function renderTodoForm(editId){
   const todo = editId ? getTodos().find(t => t.id === editId) : null;
   const isEdit = !!todo;
   const title = isEdit ? todo.title : '';
-  const priority = isEdit ? todo.priority : 'P1';
+  const priority = isEdit ? normalizePriority(todo.priority) : 'P1';
   const date = isEdit ? todo.date : todayStr();
   const linkedWeekly = isEdit ? todo.weeklyId : '';
   selectedPriority = priority; // sync global state with form state
@@ -1516,7 +1527,7 @@ function selectPriority(p){
 function saveTodo(editId){
   const title = document.getElementById('todoTitle').value.trim();
   if(!title){ showToast('请输入待办内容'); return; }
-  const priority = selectedPriority;
+  const priority = normalizePriority(selectedPriority);
   const date = document.getElementById('todoDate').value;
   const weeklyId = document.getElementById('todoWeekly').value || null;
 
@@ -1840,7 +1851,8 @@ function renderSidebar(){
     recentHtml = '<div style="text-align:center;padding:12px 0;color:var(--text-3);font-size:12px">还没有完成的事项</div>';
   } else {
     recentDone.forEach(t => {
-      const c = t.priority === 'P0' ? 'var(--p0)' : t.priority === 'P1' ? 'var(--p1)' : 'var(--p2)';
+      const pNorm = normalizePriority(t.priority);
+      const c = pNorm === 'P0' ? 'var(--p0)' : pNorm === 'P1' ? 'var(--p1)' : 'var(--p2)';
       const time = t.completedAt ? fmtDate(new Date(t.completedAt)).slice(5) : t.date.slice(5);
       recentHtml += '<div class="side-recent-item">'
         + '<div class="side-recent-dot" style="background:'+c+'"></div>'
