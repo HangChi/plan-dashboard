@@ -802,16 +802,25 @@ function getWeeksOfMonth(y, m){
   const weeks = [];
   let s = firstMonday;
   while(s <= lastDay){
-    const e = Math.min(s + 6, lastDay); /* Mon + 6 = Sun */
-    const range = s === e ? (m+1)+'/'+s : (m+1)+'/'+s+'~'+(m+1)+'/'+e;
+    /* End date is always Sunday (Mon + 6), may extend into next month */
+    const startDate = new Date(y, m, s);
+    const endDate = new Date(y, m, s + 6);
+    const e = Math.min(s + 6, lastDay); /* in-month portion for day-number filtering */
+    /* Build range string handling cross-month */
+    const sm = m + 1, sd = s;
+    const em = endDate.getMonth() + 1, ed = endDate.getDate();
+    let range;
+    if(sm === em && sd === ed) range = sm+'/'+sd;
+    else if(sm === em) range = sm+'/'+sd+'~'+em+'/'+ed;
+    else range = sm+'/'+sd+'~'+em+'/'+ed;
     weeks.push({
       label: '第'+(weeks.length+1)+'周',
       start: s, end: e,
-      startDate: fmtDate(new Date(y, m, s)),
-      endDate: fmtDate(new Date(y, m, e)),
+      startDate: fmtDate(startDate),
+      endDate: fmtDate(endDate),
       range: range,
     });
-    s = e + 1;
+    s = s + 7; /* next Monday */
   }
   return weeks;
 }
@@ -822,9 +831,15 @@ function getWeekOfMonth(dateStr){
   const firstMonday = 1 + ((1 - firstDow + 7) % 7);
   if(day < firstMonday) return 0; /* belongs to previous month's last week */
   const weeks = getWeeksOfMonth(y, m);
+  /* Use date string comparison to handle cross-month weeks */
   for(let i=0;i<weeks.length;i++){
-    if(day >= weeks[i].start && day <= weeks[i].end) return i+1;
+    if(dateStr >= weeks[i].startDate && dateStr <= weeks[i].endDate) return i+1;
   }
+  /* Check if this date belongs to previous month's last extended week */
+  const prevM = new Date(y, m-1, 1);
+  const prevWeeks = getWeeksOfMonth(prevM.getFullYear(), prevM.getMonth());
+  const lastPrev = prevWeeks[prevWeeks.length-1];
+  if(lastPrev && dateStr >= lastPrev.startDate && dateStr <= lastPrev.endDate) return 0;
   return weeks.length;
 }
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
@@ -1175,23 +1190,14 @@ function renderGoalProgress(goals, weeklies){
 
 function renderBarChart(weeks, allTodos, monthDate){
   const el = document.getElementById('barChart');
-  const mStart = fmtDate(new Date(monthDate.getFullYear(), monthDate.getMonth(), 1));
-  const mEnd = fmtDate(new Date(monthDate.getFullYear(), monthDate.getMonth()+1, 0));
-  const monthTodos = allTodos.filter(t => t.date >= mStart && t.date <= mEnd);
 
   let html = '';
   const maxCount = Math.max(...weeks.map(w => {
-    return monthTodos.filter(t => {
-      const d = parseDate(t.date).getDate();
-      return d >= w.start && d <= w.end;
-    }).length;
+    return allTodos.filter(t => t.date >= w.startDate && t.date <= w.endDate).length;
   }), 1);
 
   weeks.forEach(w => {
-    const wTodos = monthTodos.filter(t => {
-      const d = parseDate(t.date).getDate();
-      return d >= w.start && d <= w.end;
-    });
+    const wTodos = allTodos.filter(t => t.date >= w.startDate && t.date <= w.endDate);
     const total = wTodos.length;
     const done = wTodos.filter(t => t.completed).length;
     const pending = total - done;
