@@ -1013,7 +1013,7 @@ function renderGoals(){
     html += '</div></div>';
     html += '<div class="goal-actions">';
     html += '<button class="add-btn" onclick="openModal(\'weekly\',{goalId:\''+g.id+'\'})" style="padding:4px 10px;font-size:12px">'+IC.plus+'周任务</button>';
-    html += '<button class="icon-btn" onclick="deleteGoal(\''+g.id+'\')">'+IC.trash+'</button>';
+    html += '<button class="icon-btn" onclick="confirmDelete(\'goal\',\''+g.id+'\')">'+IC.trash+'</button>';
     html += '</div>';
     html += '</div>';
 
@@ -1035,7 +1035,7 @@ function renderGoals(){
           html += '<span class="weekly-progress">'+childDone+'/'+childTodos.length+' 待办</span>';
         }
         html += '</div></div>';
-        html += '<button class="icon-btn" onclick="deleteWeekly(\''+w.id+'\')" style="width:28px;height:28px">'+IC.trash+'</button>';
+        html += '<button class="icon-btn" onclick="confirmDelete(\'weekly\',\''+w.id+'\')" style="width:28px;height:28px">'+IC.trash+'</button>';
         html += '</div>';
       });
       html += '</div>';
@@ -1089,7 +1089,7 @@ function renderTodos(){
     html += '</div></div>';
     html += '<div class="todo-actions">';
     html += '<button class="icon-btn" onclick="openModal(\'todo\',{editId:\''+t.id+'\'})">'+IC.edit+'</button>';
-    html += '<button class="icon-btn" onclick="deleteTodo(\''+t.id+'\')">'+IC.trash+'</button>';
+    html += '<button class="icon-btn" onclick="confirmDelete(\'todo\',\''+t.id+'\')">'+IC.trash+'</button>';
     html += '</div>';
     html += '</div>';
   });
@@ -1286,6 +1286,27 @@ function toggleWeekly(id){
   saveWeekly(ws);
   renderAll();
   showToast(w.completed ? '周任务已完成' : '已取消完成');
+}
+
+function confirmDelete(type, id){
+  const labels = { todo:'待办事项', weekly:'周任务', goal:'月目标' };
+  const icons = { todo: '\u{1F4CB}', weekly: '\u{1F4C5}', goal: '\u{1F3AF}' };
+  const label = labels[type] || '条目';
+  let desc = '确定删除这个'+label+'吗？此操作不可撤销。';
+  if(type === 'goal'){
+    desc = '删除月目标将同时移除其下所有周任务，并解除关联待办的绑定。此操作不可撤销，确定继续吗？';
+  } else if(type === 'weekly'){
+    desc = '删除周任务将解除关联待办的绑定。此操作不可撤销，确定继续吗？';
+  }
+  showConfirm('删除'+label, desc, [
+    { text:'取消', cls:'cancel', action:closeConfirm },
+    { text:'确认删除', cls:'danger', action:function(){
+      closeConfirm();
+      if(type === 'todo') deleteTodo(id);
+      else if(type === 'weekly') deleteWeekly(id);
+      else if(type === 'goal') deleteGoal(id);
+    }},
+  ]);
 }
 
 function deleteTodo(id){
