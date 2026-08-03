@@ -1,0 +1,1908 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#4F6BED">
+<title>计划看板 · 目标拆解工作台</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --primary:#4F6BED;--primary-light:#EEF1FD;--primary-dark:#3B52D4;
+  --teal:#00B8A3;--teal-light:#E6F9F7;
+  --danger:#FF5A5F;--danger-light:#FFF0F0;
+  --success:#00C896;--success-light:#E6F9F1;
+  --warning:#FFB144;--warning-light:#FFF8EC;
+  --p0:#FF5A5F;--p1:#FFB144;--p2:#4F6BED;
+  --bg:#F5F6FA;--card:#FFFFFF;
+  --text:#1A1D29;--text-2:#6B7280;--text-3:#9CA3AF;
+  --border:#E8EAED;
+  --radius:14px;--radius-sm:10px;--radius-xs:6px;
+  --shadow:0 2px 8px rgba(0,0,0,.05);
+  --shadow-lg:0 8px 28px rgba(0,0,0,.12);
+  --header-h:56px;
+}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+  background:var(--bg);color:var(--text);line-height:1.5;
+  padding-top:var(--header-h);padding-bottom:calc(72px + env(safe-area-inset-bottom));
+  font-size:15px;
+}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select,textarea{font-family:inherit;font-size:16px}
+svg{display:block;flex-shrink:0}
+
+/* ===== Header ===== */
+.header{
+  position:fixed;top:0;left:0;right:0;height:var(--header-h);
+  background:var(--card);border-bottom:1px solid var(--border);
+  z-index:100;
+}
+.header-inner{
+  max-width:1200px;margin:0 auto;height:100%;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 16px;
+}
+.header-left{display:flex;align-items:center;gap:10px}
+.header-logo{width:28px;height:28px;background:var(--primary);border-radius:8px;display:flex;align-items:center;justify-content:center}
+.header-logo svg{width:16px;height:16px}
+.header-title{font-size:17px;font-weight:700;letter-spacing:-.3px}
+.header-date{font-size:12px;color:var(--text-2);margin-left:8px}
+.header-right{display:flex;align-items:center;gap:6px}
+.icon-btn{
+  width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+  color:var(--text-2);transition:background .15s;
+}
+.icon-btn:hover{background:var(--bg);color:var(--text)}
+.icon-btn svg{width:18px;height:18px}
+
+/* ===== Container ===== */
+.container{max-width:1200px;margin:0 auto;padding:0 16px}
+
+/* ===== Backup Reminder ===== */
+.backup-reminder{
+  background:var(--warning-light);border:1px solid #FFE0A8;
+  border-radius:var(--radius-sm);padding:10px 14px;margin:12px 16px;
+  display:flex;align-items:center;gap:8px;font-size:13px;color:#8A6D1E;
+}
+.backup-reminder svg{width:16px;height:16px;flex-shrink:0}
+
+/* ===== Today Section ===== */
+.today-section{
+  background:var(--card);border-radius:var(--radius);margin:12px 0;
+  box-shadow:var(--shadow);overflow:hidden;
+}
+.today-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px 10px;cursor:pointer;
+}
+.today-header-left{display:flex;align-items:center;gap:8px}
+.today-header-left svg{width:18px;height:18px;color:var(--primary)}
+.today-title{font-size:16px;font-weight:700}
+.today-badge{
+  background:var(--primary-light);color:var(--primary);
+  font-size:12px;font-weight:600;padding:2px 10px;border-radius:20px;
+}
+.today-toggle{transition:transform .2s}
+.today-toggle.collapsed{transform:rotate(-90deg)}
+.today-toggle svg{width:16px;height:16px;color:var(--text-2)}
+.today-body{padding:0 16px 14px;display:none}
+.today-body.expanded{display:block}
+
+.today-group{margin-bottom:12px}
+.today-group:last-child{margin-bottom:0}
+.today-group-label{
+  display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;
+  margin-bottom:8px;padding:4px 10px;border-radius:6px;
+}
+.today-group-label.overdue{background:var(--danger-light);color:var(--danger)}
+.today-group-label.today-items{background:var(--primary-light);color:var(--primary)}
+.today-group-label.upcoming{background:#F3F4F6;color:var(--text-2)}
+.today-group-label svg{width:14px;height:14px}
+
+.today-item{
+  display:flex;align-items:center;gap:10px;padding:10px 12px;
+  background:var(--bg);border-radius:var(--radius-sm);margin-bottom:6px;
+  transition:background .15s;
+}
+.today-item:hover{background:#EDF0F5}
+.today-item.overdue{background:var(--danger-light)}
+.today-item.overdue:hover{background:#FFE5E6}
+.today-checkbox{
+  width:22px;height:22px;border:2px solid var(--border);border-radius:6px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  transition:all .15s;
+}
+.today-checkbox:hover{border-color:var(--primary)}
+.today-checkbox.checked{background:var(--success);border-color:var(--success)}
+.today-checkbox.checked svg{width:14px;height:14px;color:#fff}
+.today-item-info{flex:1;min-width:0}
+.today-item-title{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.today-item-title.done{text-decoration:line-through;color:var(--text-3)}
+.today-item-meta{display:flex;align-items:center;gap:8px;margin-top:2px}
+.today-item-tag{
+  font-size:11px;padding:1px 6px;border-radius:4px;font-weight:600;
+}
+.tag-p0{background:var(--danger-light);color:var(--danger)}
+.tag-p1{background:var(--warning-light);color:#B8830A}
+.tag-p2{background:var(--primary-light);color:var(--primary)}
+.rolled-badge{font-size:11px;color:var(--danger);font-weight:600}
+.today-empty{text-align:center;padding:20px;color:var(--text-3);font-size:13px}
+
+/* ===== Tabs ===== */
+.tabs{
+  display:flex;background:var(--card);border-radius:var(--radius);
+  margin:12px 0;padding:4px;box-shadow:var(--shadow);gap:4px;
+}
+.tab-btn{
+  flex:1;padding:10px 12px;border-radius:var(--radius-sm);
+  font-size:14px;font-weight:600;color:var(--text-2);
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  transition:all .15s;
+}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{background:var(--primary);color:#fff}
+.tab-btn svg{width:16px;height:16px}
+
+/* ===== Tab Content ===== */
+.tab-content{display:none;animation:fadeIn .2s ease}
+.tab-content.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+/* ===== Month Nav ===== */
+.month-nav{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:12px;padding:0 4px;
+}
+.month-nav-btn{
+  width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+  color:var(--text-2);transition:background .15s;
+}
+.month-nav-btn:hover{background:var(--card);color:var(--text)}
+.month-nav-btn svg{width:18px;height:18px}
+.month-nav-title{font-size:18px;font-weight:700;letter-spacing:-.3px}
+
+/* ===== Section Card ===== */
+.section-card{
+  background:var(--card);border-radius:var(--radius);margin-bottom:12px;
+  box-shadow:var(--shadow);overflow:hidden;
+}
+.section-card-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px 10px;
+}
+.section-card-title{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}
+.section-card-title svg{width:16px;height:16px;color:var(--primary)}
+.add-btn{
+  display:flex;align-items:center;gap:4px;padding:6px 12px;
+  background:var(--primary-light);color:var(--primary);border-radius:8px;
+  font-size:13px;font-weight:600;transition:background .15s;
+}
+.add-btn:hover{background:#E0E5FB}
+.add-btn svg{width:14px;height:14px}
+
+/* ===== Goal Card ===== */
+.goal-card{
+  border:1px solid var(--border);border-radius:var(--radius-sm);
+  margin:0 16px 12px;overflow:hidden;
+}
+.goal-card-header{
+  padding:14px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+}
+.goal-card-title{font-size:15px;font-weight:600;flex:1}
+.goal-progress-mini{display:flex;align-items:center;gap:8px;margin-top:6px}
+.goal-progress-bar{flex:1;height:6px;background:var(--bg);border-radius:3px;overflow:hidden}
+.goal-progress-fill{height:100%;background:var(--primary);border-radius:3px;transition:width .3s}
+.goal-progress-text{font-size:12px;color:var(--text-2);font-weight:600;white-space:nowrap}
+.goal-actions{display:flex;gap:4px}
+.goal-actions .icon-btn{width:30px;height:30px}
+.goal-actions .icon-btn svg{width:15px;height:15px}
+
+.goal-weekly-list{padding:0 16px 12px}
+.weekly-item{
+  display:flex;align-items:flex-start;gap:10px;padding:10px 12px;
+  background:var(--bg);border-radius:var(--radius-xs);margin-bottom:6px;
+}
+.weekly-checkbox{
+  width:20px;height:20px;border:2px solid var(--border);border-radius:5px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;
+  transition:all .15s;
+}
+.weekly-checkbox:hover{border-color:var(--primary)}
+.weekly-checkbox.checked{background:var(--success);border-color:var(--success)}
+.weekly-checkbox.checked svg{width:12px;height:12px;color:#fff}
+.weekly-info{flex:1;min-width:0}
+.weekly-title{font-size:14px;font-weight:500}
+.weekly-title.done{text-decoration:line-through;color:var(--text-3)}
+.weekly-meta{display:flex;align-items:center;gap:8px;margin-top:3px;font-size:12px;color:var(--text-2)}
+.weekly-tag{background:var(--teal-light);color:var(--teal);padding:1px 8px;border-radius:4px;font-weight:600;font-size:11px}
+.weekly-progress{font-size:11px;color:var(--text-3)}
+
+/* ===== Todo List ===== */
+.todo-date-nav{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:12px;padding:0 4px;
+}
+.todo-date-nav .month-nav-btn{width:32px;height:32px}
+.todo-date-label{font-size:15px;font-weight:600}
+.todo-date-sub{font-size:12px;color:var(--text-2)}
+
+.todo-item{
+  display:flex;align-items:center;gap:12px;padding:12px 16px;
+  background:var(--card);border-radius:var(--radius-sm);margin-bottom:8px;
+  box-shadow:var(--shadow);transition:transform .1s;
+}
+.todo-item:active{transform:scale(.99)}
+.todo-priority-bar{width:3px;height:32px;border-radius:2px;flex-shrink:0}
+.todo-priority-bar.p0{background:var(--p0)}
+.todo-priority-bar.p1{background:var(--p1)}
+.todo-priority-bar.p2{background:var(--p2)}
+.todo-checkbox{
+  width:22px;height:22px;border:2px solid var(--border);border-radius:6px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;
+}
+.todo-checkbox:hover{border-color:var(--primary)}
+.todo-checkbox.checked{background:var(--success);border-color:var(--success)}
+.todo-checkbox.checked svg{width:14px;height:14px;color:#fff}
+.todo-content{flex:1;min-width:0}
+.todo-title{font-size:14px;font-weight:500}
+.todo-title.done{text-decoration:line-through;color:var(--text-3)}
+.todo-meta{display:flex;align-items:center;gap:6px;margin-top:3px}
+.todo-meta .today-item-tag{font-size:10px}
+.todo-link{font-size:11px;color:var(--teal);display:flex;align-items:center;gap:3px}
+.todo-link svg{width:11px;height:11px}
+.todo-actions{display:flex;gap:2px;opacity:0;transition:opacity .15s}
+.todo-item:hover .todo-actions{opacity:1}
+.todo-actions .icon-btn{width:30px;height:30px}
+.todo-actions .icon-btn svg{width:15px;height:15px}
+.rolled-flag{font-size:10px;color:var(--danger);font-weight:600;background:var(--danger-light);padding:1px 6px;border-radius:4px}
+
+/* ===== Empty State ===== */
+.empty-state{text-align:center;padding:40px 20px;color:var(--text-3)}
+.empty-state svg{width:48px;height:48px;margin:0 auto 12px;opacity:.4}
+.empty-state p{font-size:14px;margin-bottom:4px}
+.empty-state .empty-hint{font-size:12px}
+
+/* ===== Dashboard ===== */
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.dash-card{
+  background:var(--card);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);
+}
+.dash-card.full{grid-column:1/-1}
+.dash-card-title{font-size:14px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.dash-card-title svg{width:16px;height:16px;color:var(--primary)}
+
+.gauge-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center}
+.gauge-svg{width:160px;height:160px}
+.gauge-center{font-size:32px;font-weight:800;fill:var(--text)}
+.gauge-label{font-size:13px;fill:var(--text-2)}
+
+.dash-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dash-stat{text-align:center;padding:12px;background:var(--bg);border-radius:var(--radius-sm)}
+.dash-stat-num{font-size:24px;font-weight:800}
+.dash-stat-num.green{color:var(--success)}
+.dash-stat-num.blue{color:var(--primary)}
+.dash-stat-num.red{color:var(--danger)}
+.dash-stat-num.orange{color:var(--warning)}
+.dash-stat-label{font-size:12px;color:var(--text-2);margin-top:2px}
+
+.goal-progress-item{margin-bottom:14px}
+.goal-progress-item:last-child{margin-bottom:0}
+.goal-progress-name{font-size:13px;font-weight:600;margin-bottom:4px;display:flex;justify-content:space-between}
+.goal-progress-pct{color:var(--text-2)}
+
+.chart-wrap{width:100%;overflow-x:auto}
+.bar-chart{display:flex;align-items:flex-end;justify-content:space-around;gap:8px;height:140px;padding-top:8px}
+.bar-col{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;min-width:30px}
+.bar-stack{display:flex;flex-direction:column-reverse;width:100%;max-width:36px;height:100px;border-radius:4px 4px 0 0;overflow:hidden;background:var(--bg)}
+.bar-fill{width:100%;transition:height .3s}
+.bar-fill.completed{background:var(--primary)}
+.bar-fill.pending{background:#DDE3F5}
+.bar-label{font-size:11px;color:var(--text-2);font-weight:600}
+.bar-value{font-size:10px;color:var(--text-3)}
+
+.priority-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.priority-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.priority-dot.p0{background:var(--p0)}
+.priority-dot.p1{background:var(--p1)}
+.priority-dot.p2{background:var(--p2)}
+.priority-name{font-size:13px;font-weight:600;width:28px}
+.priority-bar{flex:1;height:8px;background:var(--bg);border-radius:4px;overflow:hidden}
+.priority-bar-fill{height:100%;border-radius:4px;transition:width .3s}
+.priority-bar-fill.p0{background:var(--p0)}
+.priority-bar-fill.p1{background:var(--p1)}
+.priority-bar-fill.p2{background:var(--p2)}
+.priority-num{font-size:12px;color:var(--text-2);font-weight:600;width:40px;text-align:right}
+
+.today-stat-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
+.today-stat-row:last-child{border-bottom:none}
+.today-stat-label{font-size:13px;color:var(--text-2);display:flex;align-items:center;gap:6px}
+.today-stat-val{font-size:18px;font-weight:700}
+
+/* ===== Modal ===== */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;
+  display:flex;align-items:center;justify-content:center;
+  padding:20px;
+  opacity:0;pointer-events:none;transition:opacity .2s;
+}
+.modal-overlay.show{opacity:1;pointer-events:auto}
+.modal{
+  background:var(--card);width:100%;max-width:480px;border-radius:20px;
+  padding:20px;max-height:85vh;overflow-y:auto;
+  transform:scale(.95);transition:transform .25s cubic-bezier(.32,.72,0,1);
+  padding-bottom:calc(20px + env(safe-area-inset-bottom));
+}
+.modal-overlay.show .modal{transform:scale(1)}
+.modal-title{font-size:17px;font-weight:700;margin-bottom:16px;text-align:center}
+.modal-field{margin-bottom:14px}
+.modal-field label{display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:var(--text-2)}
+.modal-field input,.modal-field select{
+  width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);
+  background:var(--bg);color:var(--text);transition:border-color .15s;
+}
+.modal-field input:focus,.modal-field select:focus{outline:none;border-color:var(--primary)}
+.priority-options{display:flex;gap:8px}
+.priority-option{
+  flex:1;padding:10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);
+  text-align:center;font-size:13px;font-weight:600;transition:all .15s;
+}
+.priority-option.selected{border-color:var(--primary);background:var(--primary-light);color:var(--primary)}
+.priority-option[data-p="P0"].selected{border-color:var(--p0);background:var(--danger-light);color:var(--danger)}
+.priority-option[data-p="P1"].selected{border-color:var(--p1);background:var(--warning-light);color:#B8830A}
+.priority-option[data-p="P2"].selected{border-color:var(--p2);background:var(--primary-light);color:var(--primary)}
+.modal-actions{display:flex;gap:10px;margin-top:18px}
+.modal-btn{
+  flex:1;padding:13px;border-radius:var(--radius-sm);font-size:15px;font-weight:600;
+  transition:all .15s;
+}
+.modal-btn.cancel{background:var(--bg);color:var(--text-2)}
+.modal-btn.cancel:hover{background:#EDEFF4}
+.modal-btn.save{background:var(--primary);color:#fff}
+.modal-btn.save:hover{background:var(--primary-dark)}
+.modal-btn.danger{background:var(--danger);color:#fff}
+
+/* ===== Confirm Dialog ===== */
+.confirm-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;
+  display:flex;align-items:center;justify-content:center;padding:32px;
+  opacity:0;pointer-events:none;transition:opacity .2s;
+}
+.confirm-overlay.show{opacity:1;pointer-events:auto}
+.confirm-box{
+  background:var(--card);border-radius:var(--radius);padding:24px;max-width:340px;width:100%;
+  text-align:center;transform:scale(.9);transition:transform .2s;
+}
+.confirm-overlay.show .confirm-box{transform:scale(1)}
+.confirm-icon{
+  width:48px;height:48px;background:var(--danger-light);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;margin:0 auto 12px;
+}
+.confirm-icon svg{width:24px;height:24px;color:var(--danger)}
+.confirm-title{font-size:17px;font-weight:700;margin-bottom:6px}
+.confirm-desc{font-size:14px;color:var(--text-2);margin-bottom:18px;line-height:1.5}
+.confirm-actions{display:flex;gap:10px}
+
+/* ===== Toast ===== */
+.toast{
+  position:fixed;bottom:calc(90px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(10px);
+  background:#1A1D29;color:#fff;padding:10px 20px;border-radius:24px;font-size:13px;
+  opacity:0;pointer-events:none;transition:all .25s;z-index:400;white-space:nowrap;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ===== Mobile Bottom Nav ===== */
+.bottom-nav{
+  position:fixed;bottom:0;left:0;right:0;height:calc(64px + env(safe-area-inset-bottom));
+  background:var(--card);border-top:1px solid var(--border);
+  display:flex;padding-bottom:env(safe-area-inset-bottom);z-index:100;
+}
+.bottom-nav-btn{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  font-size:10px;color:var(--text-3);font-weight:600;transition:color .15s;
+}
+.bottom-nav-btn.active{color:var(--primary)}
+.bottom-nav-btn svg{width:22px;height:22px}
+
+/* ===== Body Layout (two-column on desktop) ===== */
+.body-layout{display:flex;gap:16px;align-items:flex-start}
+.main-content{flex:1;min-width:0}
+
+/* ===== Sidebar ===== */
+.sidebar{display:none;width:300px;flex-shrink:0}
+.side-card{
+  background:var(--card);border-radius:var(--radius);padding:16px;
+  box-shadow:var(--shadow);margin-bottom:12px;
+  min-height:100px;display:flex;flex-direction:column;justify-content:center;
+}
+.side-card-title{
+  font-size:13px;font-weight:700;color:var(--text-2);
+  margin-bottom:12px;display:flex;align-items:center;gap:6px;
+}
+.side-card-title svg{width:14px;height:14px;color:var(--primary)}
+.side-gauge{display:flex;flex-direction:column;align-items:center;padding:4px 0}
+.side-gauge svg{width:110px;height:110px}
+.side-stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.side-stat-item{text-align:center;padding:10px 6px;background:var(--bg);border-radius:var(--radius-sm)}
+.side-stat-num{font-size:20px;font-weight:800;line-height:1.2}
+.side-stat-label{font-size:11px;color:var(--text-2);margin-top:2px}
+.streak-card{
+  background:linear-gradient(135deg,#FF6B35 0%,#FFB144 100%);color:#fff;
+  text-align:center;padding:18px 16px;
+}
+.streak-card svg{margin:0 auto 4px;width:28px;height:28px}
+.streak-num{font-size:30px;font-weight:800;line-height:1.1}
+.streak-label{font-size:12px;opacity:.92;margin-top:2px}
+.side-action{
+  display:flex;align-items:center;gap:8px;padding:10px 12px;
+  background:var(--bg);border-radius:var(--radius-sm);margin-bottom:6px;
+  font-size:13px;font-weight:600;color:var(--text);width:100%;text-align:left;
+  transition:all .15s;
+}
+.side-action:last-child{margin-bottom:0}
+.side-action:hover{background:var(--primary-light);color:var(--primary)}
+.side-action svg{width:16px;height:16px;flex-shrink:0}
+.side-recent-item{
+  display:flex;align-items:center;gap:8px;padding:8px 0;
+  border-bottom:1px solid var(--border);font-size:12px;
+}
+.side-recent-item:last-child{border-bottom:none}
+.side-recent-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.side-recent-title{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-2)}
+.side-recent-time{font-size:10px;color:var(--text-3);flex-shrink:0}
+
+/* ===== Left Sidebar ===== */
+.left-sidebar{display:none;width:250px;flex-shrink:0}
+
+/* Mini Calendar */
+.mini-cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.mini-cal-title{font-size:13px;font-weight:700}
+.mini-cal-nav{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--text-3);transition:all .15s;border:none;background:none;cursor:pointer}
+.mini-cal-nav:hover{background:var(--bg);color:var(--text)}
+.mini-cal-nav svg{width:14px;height:14px}
+.cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px}
+.cal-wd{text-align:center;font-size:10px;color:var(--text-3);font-weight:600;padding:2px 0}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.cal-cell{
+  aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font-size:11px;font-weight:600;color:var(--text);border-radius:6px;cursor:pointer;
+  position:relative;transition:all .15s;
+}
+.cal-cell:hover{background:var(--bg)}
+.cal-cell.other-month{color:var(--text-3);opacity:.4;cursor:default}
+.cal-cell.other-month:hover{background:none}
+.cal-cell.today{background:var(--primary);color:#fff}
+.cal-cell.today:hover{background:#4A6CF7}
+.cal-cell.selected:not(.today){background:var(--primary-light);color:var(--primary)}
+.cal-dot{
+  width:4px;height:4px;border-radius:50%;position:absolute;bottom:3px;
+}
+.cal-dot.pending{background:var(--danger)}
+.cal-dot.done{background:var(--success)}
+.cal-dot.mixed{background:var(--warning)}
+.cal-cell.today .cal-dot{background:#fff}
+
+/* Week task item */
+.week-task-item{padding:8px 0;border-bottom:1px solid var(--border)}
+.week-task-item:last-child{border-bottom:none}
+.week-task-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.week-task-title{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+.week-task-badge{font-size:10px;color:var(--text-3);flex-shrink:0;margin-left:6px}
+.week-task-bar{height:4px;background:var(--bg);border-radius:2px;overflow:hidden}
+.week-task-fill{height:100%;border-radius:2px;transition:width .4s}
+
+/* Countdown */
+.countdown-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.countdown-item{text-align:center;padding:12px 8px;background:var(--bg);border-radius:var(--radius-sm)}
+.countdown-num{font-size:24px;font-weight:800;line-height:1.1}
+.countdown-label{font-size:11px;color:var(--text-2);margin-top:2px}
+
+/* Quote card */
+.quote-card{
+  background:linear-gradient(135deg,var(--primary-light) 0%,#E0E6FB 100%);
+  color:var(--primary-dark);padding:16px;border-radius:var(--radius);margin-bottom:12px;
+  border-left:3px solid var(--primary);min-height:100px;display:flex;flex-direction:column;justify-content:center;
+}
+.quote-text{font-size:13px;line-height:1.6;font-weight:500}
+.quote-author{font-size:11px;opacity:.7;margin-top:8px;text-align:right}
+
+/* ===== Responsive ===== */
+@media(min-width:768px){
+  .bottom-nav{display:none}
+  body{padding-bottom:24px}
+  .dash-grid{grid-template-columns:1fr 1fr}
+}
+@media(min-width:1024px){
+  .sidebar{display:block;position:sticky;top:calc(var(--header-h) + 12px)}
+}
+@media(min-width:1280px){
+  .left-sidebar{display:block;position:sticky;top:calc(var(--header-h) + 12px)}
+  .container{max-width:1440px}
+  .header-inner{max-width:1440px}
+}
+@media(max-width:767px){
+  .tabs{display:none}
+  .dash-grid{grid-template-columns:1fr}
+  .header-date{display:none}
+  .header-title{font-size:15px}
+  .todo-actions{opacity:1}
+  .container{padding:0 12px}
+  .modal-overlay{
+    align-items:flex-end;padding:0;
+  }
+  .modal{
+    border-radius:20px 20px 0 0;max-height:90vh;
+    transform:translateY(100%);
+  }
+  .modal-overlay.show .modal{transform:translateY(0);border-radius:20px 20px 0 0}
+}
+@media(min-width:600px) and (max-width:767px){
+  .dash-grid{grid-template-columns:1fr 1fr}
+}
+
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+  <div class="header-inner">
+    <div class="header-left">
+      <div class="header-logo">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M3 3h18v18H3V3zm2 2v14h14V5H5zm2 2h6v6H7V7zm8 0h4v2h-4V7zm0 4h4v2h-4v-2zM7 15h10v2H7v-2z" fill="#fff"/></svg>
+      </div>
+      <div>
+        <span class="header-title">计划看板</span>
+        <span class="header-date" id="headerDate"></span>
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="icon-btn" onclick="exportData()" title="导出备份">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+      </button>
+      <button class="icon-btn" onclick="document.getElementById('importInput').click()" title="导入恢复">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+      </button>
+      <input type="file" id="importInput" accept=".json" style="display:none" onchange="importData(event)">
+      <button class="icon-btn" onclick="showClearConfirm()" title="清空数据">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- Backup Reminder -->
+<div class="backup-reminder hidden" id="backupReminder">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+  <span id="reminderText"></span>
+</div>
+
+<!-- Today Section -->
+<div class="container">
+  <div class="today-section">
+    <div class="today-header" onclick="toggleTodayBody()">
+      <div class="today-header-left">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        <span class="today-title">今天要处理</span>
+        <span class="today-badge" id="todayBadge">0</span>
+      </div>
+      <div class="today-toggle" id="todayToggle">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+    </div>
+    <div class="today-body expanded" id="todayBody"></div>
+  </div>
+
+  <!-- Body Layout -->
+  <div class="body-layout">
+  <aside class="left-sidebar" id="leftSidebar"></aside>
+  <main class="main-content">
+  <!-- Tabs (desktop) -->
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="goals" onclick="switchTab('goals')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+      月目标
+    </button>
+    <button class="tab-btn" data-tab="todos" onclick="switchTab('todos')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      每日待办
+    </button>
+    <button class="tab-btn" data-tab="dashboard" onclick="switchTab('dashboard')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M7 16l4-4 4 4 5-5"/></svg>
+      进度看板
+    </button>
+  </div>
+
+  <!-- Tab: Goals -->
+  <div class="tab-content active" id="tab-goals">
+    <div class="month-nav">
+      <button class="month-nav-btn" onclick="changeMonth(-1)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="month-nav-title" id="monthTitle"></div>
+      <button class="month-nav-btn" onclick="changeMonth(1)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+    </div>
+    <div class="section-card">
+      <div class="section-card-header">
+        <div class="section-card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          月目标
+        </div>
+        <button class="add-btn" onclick="openModal('goal')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          新增目标
+        </button>
+      </div>
+      <div id="goalsList"></div>
+    </div>
+  </div>
+
+  <!-- Tab: Todos -->
+  <div class="tab-content" id="tab-todos">
+    <div class="todo-date-nav">
+      <button class="month-nav-btn" onclick="changeTodoDate(-1)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div style="text-align:center">
+        <div class="todo-date-label" id="todoDateLabel"></div>
+        <div class="todo-date-sub" id="todoDateSub"></div>
+      </div>
+      <button class="month-nav-btn" onclick="changeTodoDate(1)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+      <button class="add-btn" onclick="openModal('todo')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        新增待办
+      </button>
+    </div>
+    <div id="todosList"></div>
+  </div>
+
+  <!-- Tab: Dashboard -->
+  <div class="tab-content" id="tab-dashboard">
+    <div class="month-nav">
+      <button class="month-nav-btn" onclick="changeDashMonth(-1)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="month-nav-title" id="dashMonthTitle"></div>
+      <button class="month-nav-btn" onclick="changeDashMonth(1)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+    </div>
+    <div class="dash-grid">
+      <div class="dash-card">
+        <div class="gauge-wrap">
+          <svg class="gauge-svg" viewBox="0 0 200 200" id="gaugeSvg"></svg>
+        </div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M7 16l4-4 4 4 5-5"/></svg>
+          本月概览
+        </div>
+        <div class="dash-stats" id="dashStats"></div>
+      </div>
+      <div class="dash-card full">
+        <div class="dash-card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          月目标进度
+        </div>
+        <div id="goalProgressList"></div>
+      </div>
+      <div class="dash-card full">
+        <div class="dash-card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M7 16l4-4 4 4 5-5"/></svg>
+          周完成趋势
+        </div>
+        <div class="chart-wrap">
+          <div class="bar-chart" id="barChart"></div>
+        </div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          优先级分布
+        </div>
+        <div id="priorityDist"></div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          今日完成
+        </div>
+        <div id="todayStats"></div>
+      </div>
+    </div>
+  </div>
+  </main>
+  <aside class="sidebar" id="sidebar"></aside>
+  </div><!-- /body-layout -->
+</div>
+
+<!-- Bottom Nav (mobile) -->
+<nav class="bottom-nav">
+  <button class="bottom-nav-btn active" data-tab="goals" onclick="switchTab('goals')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+    月目标
+  </button>
+  <button class="bottom-nav-btn" data-tab="todos" onclick="switchTab('todos')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+    每日待办
+  </button>
+  <button class="bottom-nav-btn" data-tab="dashboard" onclick="switchTab('dashboard')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M7 16l4-4 4 4 5-5"/></svg>
+    进度看板
+  </button>
+</nav>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalOnOverlay(event)">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<!-- Confirm Dialog -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <div class="confirm-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+    </div>
+    <div class="confirm-title" id="confirmTitle">确认操作</div>
+    <div class="confirm-desc" id="confirmDesc">此操作不可撤销，确定继续吗？</div>
+    <div class="confirm-actions" id="confirmActions"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ========== Storage ========== */
+const PREFIX = 'wb_planboard_';
+const KEYS = { goals: PREFIX+'goals', weekly: PREFIX+'weekly', todos: PREFIX+'todos', meta: PREFIX+'meta' };
+
+function loadData(key){
+  try { return JSON.parse(localStorage.getItem(key)) || []; }
+  catch { return []; }
+}
+function saveData(key, data){
+  localStorage.setItem(key, JSON.stringify(data));
+}
+function getGoals(){ return loadData(KEYS.goals); }
+function getWeekly(){ return loadData(KEYS.weekly); }
+function getTodos(){ return loadData(KEYS.todos); }
+function saveGoals(d){ saveData(KEYS.goals, d); }
+function saveWeekly(d){ saveData(KEYS.weekly, d); }
+function saveTodos(d){ saveData(KEYS.todos, d); }
+
+/* ========== Date Utils ========== */
+function pad(n){ return String(n).padStart(2,'0'); }
+function fmtDate(d){
+  if(typeof d === 'string') d = new Date(d);
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+}
+function todayStr(){ return fmtDate(new Date()); }
+function parseDate(s){ return new Date(s+'T00:00:00'); }
+function monthKey(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1); }
+function monthLabel(d){ return d.getFullYear()+'年'+(d.getMonth()+1)+'月'; }
+function weekdayCN(d){
+  const w = ['日','一','二','三','四','五','六'];
+  return '周' + w[typeof d === 'string' ? parseDate(d).getDay() : d.getDay()];
+}
+function getWeeksOfMonth(y, m){
+  const lastDay = new Date(y, m+1, 0).getDate();
+  const weeks = [];
+  for(let s=1; s<=lastDay; s+=7){
+    const e = Math.min(s+6, lastDay);
+    weeks.push({
+      label: '第'+(weeks.length+1)+'周',
+      start: s, end: e,
+      startDate: fmtDate(new Date(y, m, s)),
+      endDate: fmtDate(new Date(y, m, e)),
+    });
+  }
+  return weeks;
+}
+function getWeekOfMonth(dateStr){
+  const d = parseDate(dateStr);
+  return Math.ceil(d.getDate()/7);
+}
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+
+/* ========== State ========== */
+const state = {
+  tab: 'goals',
+  goalMonth: new Date(),
+  todoDate: new Date(),
+  dashMonth: new Date(),
+  calMonth: new Date(),
+  modal: null,
+  todayExpanded: true,
+};
+
+/* ========== Rollforward ========== */
+function rollforwardOverdue(){
+  const todos = getTodos();
+  const today = todayStr();
+  let changed = false;
+  todos.forEach(t => {
+    if(!t.completed && t.date < today && !t.rolledFrom){
+      t.rolledFrom = t.date;
+      t.date = today;
+      changed = true;
+    }
+  });
+  if(changed) saveTodos(todos);
+}
+
+/* ========== Sample Data ========== */
+function initSampleData(){
+  if(getGoals().length > 0 || getTodos().length > 0) return;
+  const now = new Date();
+  const y = now.getFullYear(); const m = now.getMonth();
+  const today = todayStr();
+  const yesterday = fmtDate(new Date(now.getTime()-86400000));
+  const tomorrow = fmtDate(new Date(now.getTime()+86400000));
+
+  const g1 = uid(), g2 = uid();
+  const w1 = uid(), w2 = uid(), w3 = uid();
+
+  saveGoals([
+    { id:g1, title:'完成Q3产品V2.0迭代', month:monthKey(now), createdAt:Date.now() },
+    { id:g2, title:'搭建团队招聘体系', month:monthKey(now), createdAt:Date.now() },
+  ]);
+  saveWeekly([
+    { id:w1, goalId:g1, title:'完成核心模块开发', week:getWeekOfMonth(today), completed:false, createdAt:Date.now() },
+    { id:w2, goalId:g1, title:'内测验收与Bug修复', week:Math.min(getWeekOfMonth(today)+1,5), completed:false, createdAt:Date.now() },
+    { id:w3, goalId:g2, title:'发布JD并筛选简历', week:getWeekOfMonth(today), completed:true, completedAt:Date.now(), createdAt:Date.now() },
+  ]);
+  saveTodos([
+    { id:uid(), title:'撰写V2.0 PRD文档', priority:'P0', date:today, completed:true, completedAt:Date.now(), weeklyId:w1, rolledFrom:null, createdAt:Date.now(), isSample:true },
+    { id:uid(), title:'回复客户功能咨询邮件', priority:'P1', date:today, completed:false, completedAt:null, weeklyId:null, rolledFrom:null, createdAt:Date.now(), isSample:true },
+    { id:uid(), title:'整理上周周报数据', priority:'P2', date:yesterday, completed:false, completedAt:null, weeklyId:null, rolledFrom:null, createdAt:Date.now(), isSample:true },
+    { id:uid(), title:'代码Review - 登录模块', priority:'P0', date:today, completed:true, completedAt:Date.now(), weeklyId:w1, rolledFrom:null, createdAt:Date.now(), isSample:true },
+    { id:uid(), title:'准备明天的评审会议材料', priority:'P1', date:tomorrow, completed:false, completedAt:null, weeklyId:w2, rolledFrom:null, createdAt:Date.now(), isSample:true },
+  ]);
+}
+
+/* ========== Icons ========== */
+const IC = {
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>',
+  warn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0zM12 9v4M12 17h.01"/></svg>',
+  pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C8 2 5 5 5 9c0 5 7 13 7 13s7-8 7-13c0-4-3-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
+  link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>',
+  trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg>',
+  edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+  empty: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>',
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>',
+};
+
+/* ========== Render: Today Section ========== */
+function renderToday(){
+  const todos = getTodos();
+  const today = todayStr();
+  const tomorrow = fmtDate(new Date(Date.now()+86400000));
+
+  const overdue = todos.filter(t => !t.completed && t.rolledFrom);
+  const todayItems = todos.filter(t => t.date === today && !t.rolledFrom);
+  const upcoming = todos.filter(t => t.date === tomorrow && !t.completed);
+
+  const pendingCount = todos.filter(t => t.date <= today && !t.completed).length;
+  document.getElementById('todayBadge').textContent = pendingCount;
+
+  let html = '';
+  if(overdue.length === 0 && todayItems.filter(t=>!t.completed).length === 0 && upcoming.length === 0){
+    html = '<div class="today-empty">今天没有待处理的事项，继续保持！</div>';
+  } else {
+    if(overdue.length > 0){
+      html += '<div class="today-group"><div class="today-group-label overdue">'+IC.warn+'逾期顺延 ('+overdue.length+')</div>';
+      overdue.forEach(t => {
+        html += renderTodayItem(t, true);
+      });
+      html += '</div>';
+    }
+    const todayPending = todayItems.filter(t => !t.completed);
+    if(todayPending.length > 0){
+      html += '<div class="today-group"><div class="today-group-label today-items">'+IC.pin+'今日待办 ('+todayPending.length+')</div>';
+      todayPending.forEach(t => {
+        html += renderTodayItem(t, false);
+      });
+      html += '</div>';
+    }
+    if(upcoming.length > 0){
+      html += '<div class="today-group"><div class="today-group-label upcoming">'+IC.clock+'明日预告 ('+upcoming.length+')</div>';
+      upcoming.forEach(t => {
+        html += renderTodayItem(t, false, true);
+      });
+      html += '</div>';
+    }
+  }
+  document.getElementById('todayBody').innerHTML = html;
+}
+
+function renderTodayItem(t, isOverdue, isUpcoming){
+  const pClass = 'tag-'+t.priority.toLowerCase();
+  const rolledFlag = t.rolledFrom ? '<span class="rolled-flag">顺延自 '+t.rolledFrom+'</span>' : '';
+  return '<div class="today-item'+(isOverdue?' overdue':'')+'" data-todo-id="'+t.id+'">'
+    + '<div class="today-checkbox'+(t.completed?' checked':'')+'" onclick="toggleTodo(\''+t.id+'\')">'+(t.completed?IC.check:'')+'</div>'
+    + '<div class="today-item-info">'
+    +   '<div class="today-item-title'+(t.completed?' done':'')+'">'+escapeHtml(t.title)+'</div>'
+    +   '<div class="today-item-meta">'
+    +     '<span class="today-item-tag '+pClass+'">'+t.priority+'</span>'
+    +     rolledFlag
+    +   '</div>'
+    + '</div>'
+    + '<button class="icon-btn" onclick="quickComplete(\''+t.id+'\')" style="width:32px;height:32px;color:var(--success)">'
+    +   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>'
+    + '</button>'
+  + '</div>';
+}
+
+function toggleTodayBody(){
+  state.todayExpanded = !state.todayExpanded;
+  const body = document.getElementById('todayBody');
+  const toggle = document.getElementById('todayToggle');
+  body.classList.toggle('expanded', state.todayExpanded);
+  toggle.classList.toggle('collapsed', !state.todayExpanded);
+}
+
+/* ========== Render: Goals Tab ========== */
+function renderGoals(){
+  const mk = monthKey(state.goalMonth);
+  document.getElementById('monthTitle').textContent = monthLabel(state.goalMonth);
+  const goals = getGoals().filter(g => g.month === mk);
+  const allWeekly = getWeekly();
+  const allTodos = getTodos();
+
+  if(goals.length === 0){
+    document.getElementById('goalsList').innerHTML = '<div class="empty-state" style="padding:30px 16px">'
+      + IC.empty + '<p>本月还没有目标</p><p class="empty-hint">点击右上角「新增目标」开始规划</p></div>';
+    return;
+  }
+
+  let html = '';
+  goals.forEach(g => {
+    const weeklies = allWeekly.filter(w => w.goalId === g.id);
+    const completedWeekly = weeklies.filter(w => w.completed).length;
+    const pct = weeklies.length > 0 ? Math.round(completedWeekly/weeklies.length*100) : 0;
+
+    html += '<div class="goal-card">';
+    html += '<div class="goal-card-header">';
+    html += '<div style="flex:1">';
+    html += '<div class="goal-card-title">'+escapeHtml(g.title)+'</div>';
+    html += '<div class="goal-progress-mini">';
+    html += '<div class="goal-progress-bar"><div class="goal-progress-fill" style="width:'+pct+'%"></div></div>';
+    html += '<span class="goal-progress-text">'+completedWeekly+'/'+weeklies.length+' ('+pct+'%)</span>';
+    html += '</div></div>';
+    html += '<div class="goal-actions">';
+    html += '<button class="add-btn" onclick="openModal(\'weekly\',{goalId:\''+g.id+'\'})" style="padding:4px 10px;font-size:12px">'+IC.plus+'周任务</button>';
+    html += '<button class="icon-btn" onclick="deleteGoal(\''+g.id+'\')">'+IC.trash+'</button>';
+    html += '</div>';
+    html += '</div>';
+
+    if(weeklies.length > 0){
+      html += '<div class="goal-weekly-list">';
+      const weeks = getWeeksOfMonth(state.goalMonth.getFullYear(), state.goalMonth.getMonth());
+      weeklies.forEach(w => {
+        const childTodos = allTodos.filter(t => t.weeklyId === w.id);
+        const childDone = childTodos.filter(t => t.completed).length;
+        const wk = weeks[w.week-1] || {label:'第'+w.week+'周'};
+        html += '<div class="weekly-item">';
+        html += '<div class="weekly-checkbox'+(w.completed?' checked':'')+'" onclick="toggleWeekly(\''+w.id+'\')">'+(w.completed?IC.check:'')+'</div>';
+        html += '<div class="weekly-info">';
+        html += '<div class="weekly-title'+(w.completed?' done':'')+'">'+escapeHtml(w.title)+'</div>';
+        html += '<div class="weekly-meta">';
+        html += '<span class="weekly-tag">'+wk.label+'</span>';
+        if(childTodos.length > 0){
+          html += '<span class="weekly-progress">'+childDone+'/'+childTodos.length+' 待办</span>';
+        }
+        html += '</div></div>';
+        html += '<button class="icon-btn" onclick="deleteWeekly(\''+w.id+'\')" style="width:28px;height:28px">'+IC.trash+'</button>';
+        html += '</div>';
+      });
+      html += '</div>';
+    } else {
+      html += '<div style="padding:0 16px 12px;font-size:12px;color:var(--text-3)">暂无周任务，点击「周任务」拆解目标</div>';
+    }
+    html += '</div>';
+  });
+  document.getElementById('goalsList').innerHTML = html;
+}
+
+/* ========== Render: Todos Tab ========== */
+function renderTodos(){
+  const ds = fmtDate(state.todoDate);
+  document.getElementById('todoDateLabel').textContent = ds;
+  document.getElementById('todoDateSub').textContent = weekdayCN(ds) + (ds === todayStr() ? ' · 今天' : '');
+
+  const todos = getTodos().filter(t => t.date === ds);
+  if(todos.length === 0){
+    document.getElementById('todosList').innerHTML = '<div class="empty-state">'
+      + IC.empty + '<p>当天没有待办事项</p><p class="empty-hint">点击「新增待办」添加</p></div>';
+    return;
+  }
+
+  const order = { P0:0, P1:1, P2:2 };
+  todos.sort((a,b) => {
+    if(a.completed !== b.completed) return a.completed ? 1 : -1;
+    return (order[a.priority]||2) - (order[b.priority]||2);
+  });
+
+  const allWeekly = getWeekly();
+  const allGoals = getGoals();
+
+  let html = '';
+  todos.forEach(t => {
+    const pLower = t.priority.toLowerCase();
+    const wk = t.weeklyId ? allWeekly.find(w => w.id === t.weeklyId) : null;
+    const goal = wk ? allGoals.find(g => g.id === wk.goalId) : null;
+    const rolledFlag = t.rolledFrom ? '<span class="rolled-flag">顺延自 '+t.rolledFrom+'</span>' : '';
+    const linkInfo = goal ? '<span class="todo-link">'+IC.link+escapeHtml(goal.title)+'</span>' : '';
+
+    html += '<div class="todo-item">';
+    html += '<div class="todo-priority-bar '+pLower+'"></div>';
+    html += '<div class="todo-checkbox'+(t.completed?' checked':'')+'" onclick="toggleTodo(\''+t.id+'\')">'+(t.completed?IC.check:'')+'</div>';
+    html += '<div class="todo-content">';
+    html += '<div class="todo-title'+(t.completed?' done':'')+'">'+escapeHtml(t.title)+'</div>';
+    html += '<div class="todo-meta">';
+    html += '<span class="today-item-tag tag-'+pLower+'">'+t.priority+'</span>';
+    if(wk) html += '<span class="todo-link">'+IC.link+escapeHtml(wk.title)+'</span>';
+    html += rolledFlag;
+    html += '</div></div>';
+    html += '<div class="todo-actions">';
+    html += '<button class="icon-btn" onclick="openModal(\'todo\',{editId:\''+t.id+'\'})">'+IC.edit+'</button>';
+    html += '<button class="icon-btn" onclick="deleteTodo(\''+t.id+'\')">'+IC.trash+'</button>';
+    html += '</div>';
+    html += '</div>';
+  });
+  document.getElementById('todosList').innerHTML = html;
+}
+
+/* ========== Render: Dashboard Tab ========== */
+function renderDashboard(){
+  const mk = monthKey(state.dashMonth);
+  document.getElementById('dashMonthTitle').textContent = monthLabel(state.dashMonth);
+
+  const goals = getGoals().filter(g => g.month === mk);
+  const goalIds = goals.map(g => g.id);
+  const weeklies = getWeekly().filter(w => goalIds.includes(w.goalId));
+  const weeklyIds = weeklies.map(w => w.id);
+  const weeks = getWeeksOfMonth(state.dashMonth.getFullYear(), state.dashMonth.getMonth());
+
+  // Get all todos for this month (by date range)
+  const mStart = fmtDate(new Date(state.dashMonth.getFullYear(), state.dashMonth.getMonth(), 1));
+  const mEnd = fmtDate(new Date(state.dashMonth.getFullYear(), state.dashMonth.getMonth()+1, 0));
+  const allTodos = getTodos();
+  const monthTodos = allTodos.filter(t => t.date >= mStart && t.date <= mEnd);
+  const linkedTodos = allTodos.filter(t => weeklyIds.includes(t.weeklyId));
+
+  // Gauge: overall completion rate (todos this month)
+  const totalTodos = monthTodos.length;
+  const doneTodos = monthTodos.filter(t => t.completed).length;
+  const overallPct = totalTodos > 0 ? Math.round(doneTodos/totalTodos*100) : 0;
+  renderGauge(overallPct, doneTodos, totalTodos);
+
+  // Stats
+  const totalWeekly = weeklies.length;
+  const doneWeekly = weeklies.filter(w => w.completed).length;
+  const totalGoals = goals.length;
+  const doneGoals = goals.filter(g => {
+    const ws = weeklies.filter(w => w.goalId === g.id);
+    return ws.length > 0 && ws.every(w => w.completed);
+  }).length;
+
+  document.getElementById('dashStats').innerHTML =
+    statBox(doneGoals, totalGoals, 'green', '完成目标') +
+    statBox(doneWeekly, totalWeekly, 'blue', '完成周任务') +
+    statBox(doneTodos, totalTodos, 'green', '完成待办') +
+    statBox(monthTodos.filter(t => !t.completed && t.date < todayStr()).length, '', 'red', '逾期项');
+
+  // Goal progress
+  renderGoalProgress(goals, weeklies);
+
+  // Weekly bar chart
+  renderBarChart(weeks, allTodos, state.dashMonth);
+
+  // Priority distribution
+  renderPriorityDist(monthTodos);
+
+  // Today stats
+  renderTodayStats();
+}
+
+function renderGauge(pct, done, total){
+  const r = 72;
+  const circ = 2 * Math.PI * r;
+  const offset = circ * (1 - pct/100);
+  const color = pct >= 75 ? 'var(--success)' : pct >= 50 ? 'var(--primary)' : pct >= 25 ? 'var(--warning)' : 'var(--danger)';
+
+  document.getElementById('gaugeSvg').innerHTML =
+    '<circle cx="100" cy="100" r="'+r+'" fill="none" stroke="#E8EAED" stroke-width="14"/>'
+    + '<circle cx="100" cy="100" r="'+r+'" fill="none" stroke="'+color+'" stroke-width="14"'
+    + ' stroke-dasharray="'+circ.toFixed(2)+'" stroke-dashoffset="'+offset.toFixed(2)+'"'
+    + ' transform="rotate(-90 100 100)" stroke-linecap="round" style="transition:stroke-dashoffset .5s"/>'
+    + '<text x="100" y="98" text-anchor="middle" class="gauge-center">'+pct+'%</text>'
+    + '<text x="100" y="120" text-anchor="middle" class="gauge-label">完成率</text>'
+    + '<text x="100" y="138" text-anchor="middle" style="font-size:11px;fill:var(--text-3)">'+done+'/'+total+'</text>';
+}
+
+function statBox(num, total, color, label){
+  const txt = total !== '' ? num+'/'+total : String(num);
+  return '<div class="dash-stat"><div class="dash-stat-num '+color+'">'+txt+'</div><div class="dash-stat-label">'+label+'</div></div>';
+}
+
+function renderGoalProgress(goals, weeklies){
+  const el = document.getElementById('goalProgressList');
+  if(goals.length === 0){
+    el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-3);font-size:13px">本月暂无目标</div>';
+    return;
+  }
+  let html = '';
+  goals.forEach(g => {
+    const ws = weeklies.filter(w => w.goalId === g.id);
+    const done = ws.filter(w => w.completed).length;
+    const pct = ws.length > 0 ? Math.round(done/ws.length*100) : 0;
+    html += '<div class="goal-progress-item">'
+      + '<div class="goal-progress-name"><span>'+escapeHtml(g.title)+'</span><span class="goal-progress-pct">'+pct+'%</span></div>'
+      + '<div class="goal-progress-bar"><div class="goal-progress-fill" style="width:'+pct+'%;background:'+(pct>=100?'var(--success)':'var(--primary)')+'"></div></div>'
+      + '</div>';
+  });
+  el.innerHTML = html;
+}
+
+function renderBarChart(weeks, allTodos, monthDate){
+  const el = document.getElementById('barChart');
+  const mStart = fmtDate(new Date(monthDate.getFullYear(), monthDate.getMonth(), 1));
+  const mEnd = fmtDate(new Date(monthDate.getFullYear(), monthDate.getMonth()+1, 0));
+  const monthTodos = allTodos.filter(t => t.date >= mStart && t.date <= mEnd);
+
+  let html = '';
+  const maxCount = Math.max(...weeks.map(w => {
+    return monthTodos.filter(t => {
+      const d = parseDate(t.date).getDate();
+      return d >= w.start && d <= w.end;
+    }).length;
+  }), 1);
+
+  weeks.forEach(w => {
+    const wTodos = monthTodos.filter(t => {
+      const d = parseDate(t.date).getDate();
+      return d >= w.start && d <= w.end;
+    });
+    const total = wTodos.length;
+    const done = wTodos.filter(t => t.completed).length;
+    const pending = total - done;
+    const doneH = total > 0 ? (done/maxCount*100) : 0;
+    const pendH = total > 0 ? (pending/maxCount*100) : 0;
+
+    html += '<div class="bar-col">'
+      + '<div class="bar-value">'+done+'/'+total+'</div>'
+      + '<div class="bar-stack">'
+      +   '<div class="bar-fill pending" style="height:'+pendH+'%"></div>'
+      +   '<div class="bar-fill completed" style="height:'+doneH+'%"></div>'
+      + '</div>'
+      + '<div class="bar-label">'+w.label+'</div>'
+      + '</div>';
+  });
+  el.innerHTML = html;
+}
+
+function renderPriorityDist(todos){
+  const el = document.getElementById('priorityDist');
+  const priorities = ['P0','P1','P2'];
+  let html = '';
+  const maxCount = Math.max(...priorities.map(p => todos.filter(t => t.priority === p).length), 1);
+  priorities.forEach(p => {
+    const items = todos.filter(t => t.priority === p);
+    const done = items.filter(t => t.completed).length;
+    const total = items.length;
+    const pct = total > 0 ? Math.round(done/total*100) : 0;
+    const widthPct = total/maxCount*100;
+    html += '<div class="priority-row">'
+      + '<div class="priority-dot '+p.toLowerCase()+'"></div>'
+      + '<div class="priority-name">'+p+'</div>'
+      + '<div class="priority-bar"><div class="priority-bar-fill '+p.toLowerCase()+'" style="width:'+widthPct+'%"></div></div>'
+      + '<div class="priority-num">'+done+'/'+total+'</div>'
+      + '</div>';
+  });
+  el.innerHTML = html || '<div style="text-align:center;padding:12px;color:var(--text-3);font-size:13px">暂无数据</div>';
+}
+
+function renderTodayStats(){
+  const today = todayStr();
+  const todos = getTodos().filter(t => t.date === today);
+  const done = todos.filter(t => t.completed).length;
+  const pending = todos.filter(t => !t.completed).length;
+  const overdue = getTodos().filter(t => !t.completed && t.rolledFrom).length;
+  const total = todos.length;
+  const pct = total > 0 ? Math.round(done/total*100) : 0;
+
+  document.getElementById('todayStats').innerHTML =
+    statRow('已完成', done, 'var(--success)') +
+    statRow('待处理', pending, 'var(--primary)') +
+    statRow('逾期顺延', overdue, 'var(--danger)') +
+    statRow('今日完成率', pct+'%', 'var(--teal)');
+}
+
+function statRow(label, val, color){
+  return '<div class="today-stat-row">'
+    + '<div class="today-stat-label">'+label+'</div>'
+    + '<div class="today-stat-val" style="color:'+color+'">'+val+'</div>'
+    + '</div>';
+}
+
+/* ========== Actions ========== */
+function toggleTodo(id){
+  const todos = getTodos();
+  const t = todos.find(x => x.id === id);
+  if(!t) return;
+  t.completed = !t.completed;
+  t.completedAt = t.completed ? Date.now() : null;
+  saveTodos(todos);
+  renderAll();
+  showToast(t.completed ? '已完成' : '已取消完成');
+}
+
+function quickComplete(id){
+  toggleTodo(id);
+}
+
+function toggleWeekly(id){
+  const ws = getWeekly();
+  const w = ws.find(x => x.id === id);
+  if(!w) return;
+  w.completed = !w.completed;
+  w.completedAt = w.completed ? Date.now() : null;
+  saveWeekly(ws);
+  renderAll();
+  showToast(w.completed ? '周任务已完成' : '已取消完成');
+}
+
+function deleteTodo(id){
+  const todos = getTodos().filter(t => t.id !== id);
+  saveTodos(todos);
+  renderAll();
+  showToast('已删除');
+}
+
+function deleteWeekly(id){
+  const ws = getWeekly().filter(w => w.id !== id);
+  saveWeekly(ws);
+  const todos = getTodos().map(t => t.weeklyId === id ? {...t, weeklyId: null} : t);
+  saveTodos(todos);
+  renderAll();
+  showToast('已删除周任务');
+}
+
+function deleteGoal(id){
+  const goals = getGoals().filter(g => g.id !== id);
+  saveGoals(goals);
+  const ws = getWeekly().filter(w => w.goalId !== id);
+  const removedWIds = getWeekly().filter(w => w.goalId === id).map(w => w.id);
+  saveWeekly(ws);
+  const todos = getTodos().map(t => removedWIds.includes(t.weeklyId) ? {...t, weeklyId: null} : t);
+  saveTodos(todos);
+  renderAll();
+  showToast('已删除目标');
+}
+
+/* ========== Tab Switch ========== */
+function switchTab(tab){
+  state.tab = tab;
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.bottom-nav-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.querySelectorAll('[data-tab="'+tab+'"]').forEach(el => el.classList.add('active'));
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+/* ========== Month/Date Nav ========== */
+function changeMonth(dir){
+  state.goalMonth = new Date(state.goalMonth.getFullYear(), state.goalMonth.getMonth()+dir, 1);
+  renderGoals();
+}
+function changeTodoDate(dir){
+  state.todoDate = new Date(state.todoDate.getTime() + dir*86400000);
+  renderTodos();
+}
+function changeDashMonth(dir){
+  state.dashMonth = new Date(state.dashMonth.getFullYear(), state.dashMonth.getMonth()+dir, 1);
+  renderDashboard();
+}
+
+/* ========== Modal ========== */
+function openModal(type, opts){
+  opts = opts || {};
+  state.modal = { type, ...opts };
+  const el = document.getElementById('modalContent');
+
+  if(type === 'goal'){
+    el.innerHTML = renderGoalForm();
+  } else if(type === 'weekly'){
+    el.innerHTML = renderWeeklyForm(opts.goalId);
+  } else if(type === 'todo'){
+    el.innerHTML = renderTodoForm(opts.editId);
+  }
+
+  document.getElementById('modalOverlay').classList.add('show');
+  setTimeout(() => {
+    const firstInput = el.querySelector('input, select');
+    if(firstInput) firstInput.focus();
+  }, 200);
+}
+
+function closeModal(){
+  document.getElementById('modalOverlay').classList.remove('show');
+  state.modal = null;
+}
+
+function closeModalOnOverlay(e){
+  if(e.target === document.getElementById('modalOverlay')) closeModal();
+}
+
+function renderGoalForm(){
+  return '<div class="modal-title">新增月目标</div>'
+    + '<div class="modal-field"><label>目标标题</label>'
+    + '<input type="text" id="goalTitle" placeholder="如：完成Q3产品迭代" maxlength="50"></div>'
+    + '<div class="modal-actions">'
+    + '<button class="modal-btn cancel" onclick="closeModal()">取消</button>'
+    + '<button class="modal-btn save" onclick="saveGoal()">保存</button>'
+    + '</div>';
+}
+
+function saveGoal(){
+  const title = document.getElementById('goalTitle').value.trim();
+  if(!title){ showToast('请输入目标标题'); return; }
+  const goals = getGoals();
+  goals.push({ id:uid(), title, month:monthKey(state.goalMonth), createdAt:Date.now() });
+  saveGoals(goals);
+  closeModal();
+  renderAll();
+  showToast('目标已添加');
+}
+
+function renderWeeklyForm(goalId){
+  const weeks = getWeeksOfMonth(state.goalMonth.getFullYear(), state.goalMonth.getMonth());
+  const currentWeek = getWeekOfMonth(todayStr());
+  let weekOpts = weeks.map((w,i) => '<option value="'+(i+1)+'"'+(i+1===currentWeek?' selected':'')+'>'+w.label+' ('+w.start+'-'+w.end+'日)</option>').join('');
+
+  return '<div class="modal-title">新增周任务</div>'
+    + '<div class="modal-field"><label>任务标题</label>'
+    + '<input type="text" id="weeklyTitle" placeholder="如：完成核心模块开发" maxlength="50"></div>'
+    + '<div class="modal-field"><label>所属周</label>'
+    + '<select id="weeklyWeek">'+weekOpts+'</select></div>'
+    + '<div class="modal-field"><label>关联月目标</label>'
+    + '<select id="weeklyGoal">'
+    + getGoals().filter(g => g.month === monthKey(state.goalMonth)).map(g => '<option value="'+g.id+'"'+(g.id===goalId?' selected':'')+'>'+escapeHtml(g.title)+'</option>').join('')
+    + '</select></div>'
+    + '<div class="modal-actions">'
+    + '<button class="modal-btn cancel" onclick="closeModal()">取消</button>'
+    + '<button class="modal-btn save" onclick="addWeekly()">保存</button>'
+    + '</div>';
+}
+
+function addWeekly(){
+  const title = document.getElementById('weeklyTitle').value.trim();
+  if(!title){ showToast('请输入任务标题'); return; }
+  const week = parseInt(document.getElementById('weeklyWeek').value);
+  const goalId = document.getElementById('weeklyGoal').value;
+  if(!goalId){ showToast('请先创建月目标'); return; }
+  const ws = getWeekly();
+  ws.push({ id:uid(), goalId, title, week, completed:false, completedAt:null, createdAt:Date.now() });
+  saveWeekly(ws);
+  closeModal();
+  renderAll();
+  showToast('周任务已添加');
+}
+
+function renderTodoForm(editId){
+  const todo = editId ? getTodos().find(t => t.id === editId) : null;
+  const isEdit = !!todo;
+  const title = isEdit ? todo.title : '';
+  const priority = isEdit ? todo.priority : 'P1';
+  const date = isEdit ? todo.date : todayStr();
+  const linkedWeekly = isEdit ? todo.weeklyId : '';
+
+  // Get current month's weeklies for linking
+  const mk = monthKey(state.goalMonth);
+  const goals = getGoals().filter(g => g.month === mk);
+  const goalIds = goals.map(g => g.id);
+  const weeklies = getWeekly().filter(w => goalIds.includes(w.goalId));
+
+  let weeklyOpts = '<option value="">不关联</option>';
+  goals.forEach(g => {
+    const ws = weeklies.filter(w => w.goalId === g.id);
+    if(ws.length > 0){
+      weeklyOpts += '<optgroup label="'+escapeHtml(g.title)+'">';
+      ws.forEach(w => {
+        weeklyOpts += '<option value="'+w.id+'"'+(w.id===linkedWeekly?' selected':'')+'>'+escapeHtml(w.title)+'</option>';
+      });
+      weeklyOpts += '</optgroup>';
+    }
+  });
+
+  return '<div class="modal-title">'+(isEdit?'编辑待办':'新增待办')+'</div>'
+    + '<div class="modal-field"><label>待办内容</label>'
+    + '<input type="text" id="todoTitle" placeholder="如：撰写PRD文档" maxlength="60" value="'+escapeAttr(title)+'"></div>'
+    + '<div class="modal-field"><label>优先级</label>'
+    + '<div class="priority-options">'
+    + ['P0','P1','P2'].map(p => '<div class="priority-option'+(p===priority?' selected':'')+'" data-p="'+p+'" onclick="selectPriority(\''+p+'\')">'+p+'</div>').join('')
+    + '</div></div>'
+    + '<div class="modal-field"><label>日期</label>'
+    + '<input type="date" id="todoDate" value="'+date+'"></div>'
+    + '<div class="modal-field"><label>关联周任务（可选）</label>'
+    + '<select id="todoWeekly">'+weeklyOpts+'</select></div>'
+    + '<div class="modal-actions">'
+    + '<button class="modal-btn cancel" onclick="closeModal()">取消</button>'
+    + '<button class="modal-btn save" onclick="saveTodo(\''+(editId||'')+'\')">'+(isEdit?'保存':'添加')+'</button>'
+    + '</div>';
+}
+
+let selectedPriority = 'P1';
+function selectPriority(p){
+  selectedPriority = p;
+  document.querySelectorAll('.priority-option').forEach(el => el.classList.remove('selected'));
+  document.querySelector('.priority-option[data-p="'+p+'"]').classList.add('selected');
+}
+
+function saveTodo(editId){
+  const title = document.getElementById('todoTitle').value.trim();
+  if(!title){ showToast('请输入待办内容'); return; }
+  const priority = selectedPriority;
+  const date = document.getElementById('todoDate').value;
+  const weeklyId = document.getElementById('todoWeekly').value || null;
+
+  const todos = getTodos();
+  if(editId){
+    const t = todos.find(x => x.id === editId);
+    if(t){
+      t.title = title; t.priority = priority; t.date = date; t.weeklyId = weeklyId;
+    }
+  } else {
+    todos.push({ id:uid(), title, priority, date, completed:false, completedAt:null, weeklyId, rolledFrom:null, createdAt:Date.now() });
+  }
+  saveTodos(todos);
+  closeModal();
+  renderAll();
+  showToast(editId ? '已保存修改' : '待办已添加');
+}
+
+/* ========== Export / Import ========== */
+function exportData(){
+  const data = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    goals: getGoals(),
+    weekly: getWeekly(),
+    todos: getTodos(),
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'planboard-backup-'+todayStr()+'.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('已导出备份文件');
+}
+
+function importData(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try {
+      const data = JSON.parse(e.target.result);
+      if(!data.goals || !data.todos){ throw new Error('格式不对'); }
+      if(data.goals) saveGoals(data.goals);
+      if(data.weekly) saveWeekly(data.weekly);
+      if(data.todos) saveTodos(data.todos);
+      renderAll();
+      showToast('导入成功，共 '+data.todos.length+' 条待办');
+    } catch(err){
+      showToast('导入失败：文件格式不正确');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+/* ========== Clear Data ========== */
+function showClearConfirm(){
+  showConfirm('清空所有数据', '此操作将永久删除所有目标、周任务和待办事项，且不可撤销。确定继续吗？', [
+    { text:'取消', cls:'cancel', action:closeConfirm },
+    { text:'确认清空', cls:'danger', action:function(){
+      saveGoals([]); saveWeekly([]); saveTodos([]);
+      closeConfirm();
+      initSampleData();
+      renderAll();
+      showToast('已清空并重置示例数据');
+    }},
+  ]);
+}
+
+function showConfirm(title, desc, actions){
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmDesc').textContent = desc;
+  const ac = document.getElementById('confirmActions');
+  ac.innerHTML = '';
+  actions.forEach(a => {
+    const btn = document.createElement('button');
+    btn.className = 'modal-btn '+a.cls;
+    btn.textContent = a.text;
+    btn.onclick = a.action;
+    ac.appendChild(btn);
+  });
+  document.getElementById('confirmOverlay').classList.add('show');
+}
+function closeConfirm(){
+  document.getElementById('confirmOverlay').classList.remove('show');
+}
+
+/* ========== Backup Reminder ========== */
+function updateBackupReminder(){
+  const total = getGoals().length + getWeekly().length + getTodos().length;
+  const el = document.getElementById('backupReminder');
+  if(total >= 30){
+    el.classList.remove('hidden');
+    document.getElementById('reminderText').textContent = '数据已积累 '+total+' 条，建议导出备份以防丢失';
+  } else {
+    el.classList.add('hidden');
+  }
+}
+
+/* ========== Utils ========== */
+function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escapeAttr(s){ return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+function showToast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._timer);
+  el._timer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+/* ========== Render Left Sidebar ========== */
+const QUOTES = [
+  {t:'种一棵树最好的时间是十年前，其次是现在。',a:'中国谚语'},
+  {t:'不要等到万事俱备，有了七成把握就开始行动。',a:'佚名'},
+  {t:'积土成山，风雨兴焉；积水成渊，蛟龙生焉。',a:'荀子'},
+  {t:'天下难事，必作于易；天下大事，必作于细。',a:'老子'},
+  {t:'不积跬步，无以至千里；不积小流，无以成江海。',a:'荀子'},
+  {t:'今日事，今日毕。',a:'曾国藩'},
+  {t:'路虽远，行则将至；事虽难，做则必成。',a:'荀子'},
+  {t:'每一步都算数，每一天都重要。',a:'佚名'},
+  {t:'完成比完美更重要。',a:'Facebook格言'},
+  {t:'专注当下，未来自会清晰。',a:'佚名'},
+];
+
+function getWeekNumberOfMonth(date){
+  const d = new Date(date);
+  const day = d.getDate();
+  return Math.ceil(day / 7);
+}
+
+function changeCalMonth(dir){
+  state.calMonth = new Date(state.calMonth.getFullYear(), state.calMonth.getMonth()+dir, 1);
+  renderLeftSidebar();
+}
+
+function calDayClick(dateStr){
+  state.todoDate = parseDate(dateStr);
+  switchTab('todos');
+}
+
+function renderLeftSidebar(){
+  const el = document.getElementById('leftSidebar');
+  if(!el) return;
+  const today = todayStr();
+  const todos = getTodos();
+
+  /* --- Mini Calendar --- */
+  const cm = state.calMonth;
+  const y = cm.getFullYear(), m = cm.getMonth();
+  const firstDay = new Date(y, m, 1).getDay(); // 0=Sun
+  const lastDate = new Date(y, m+1, 0).getDate();
+  const prevLastDate = new Date(y, m, 0).getDate();
+  const todayDate = new Date();
+  const isCurMonth = todayDate.getFullYear()===y && todayDate.getMonth()===m;
+
+  // Map todo dates for this month
+  const todoMap = {};
+  const mStart = fmtDate(new Date(y, m, 1));
+  const mEnd = fmtDate(new Date(y, m+1, 0));
+  todos.filter(t => t.date >= mStart && t.date <= mEnd).forEach(t => {
+    if(!todoMap[t.date]) todoMap[t.date] = {done:0, pending:0};
+    if(t.completed) todoMap[t.date].done++;
+    else todoMap[t.date].pending++;
+  });
+
+  const wdLabels = ['日','一','二','三','四','五','六'];
+  let calHtml = '<div class="cal-weekdays">';
+  wdLabels.forEach(w => { calHtml += '<div class="cal-wd">'+w+'</div>'; });
+  calHtml += '</div><div class="cal-grid">';
+
+  // Leading blanks (prev month)
+  for(let i = firstDay; i > 0; i--){
+    calHtml += '<div class="cal-cell other-month">'+(prevLastDate - i + 1)+'</div>';
+  }
+  // Current month days
+  for(let d = 1; d <= lastDate; d++){
+    const ds = y+'-'+pad(m+1)+'-'+pad(d);
+    const isToday = isCurMonth && d === todayDate.getDate();
+    const isSelected = ds === fmtDate(state.todoDate);
+    const info = todoMap[ds];
+    let dotHtml = '';
+    if(info){
+      let dotClass = info.pending > 0 && info.done > 0 ? 'mixed' : info.pending > 0 ? 'pending' : 'done';
+      dotHtml = '<div class="cal-dot '+dotClass+'"></div>';
+    }
+    let cls = 'cal-cell';
+    if(isToday) cls += ' today';
+    if(isSelected && !isToday) cls += ' selected';
+    calHtml += '<div class="'+cls+'" onclick="calDayClick(\''+ds+'\')">'+d+dotHtml+'</div>';
+  }
+  // Trailing blanks (next month)
+  const totalCells = firstDay + lastDate;
+  const trailing = (7 - (totalCells % 7)) % 7;
+  for(let i = 1; i <= trailing; i++){
+    calHtml += '<div class="cal-cell other-month">'+i+'</div>';
+  }
+  calHtml += '</div>';
+
+  /* --- This week's tasks --- */
+  const mk = monthKey(new Date());
+  const goals = getGoals().filter(g => g.month === mk);
+  const goalIds = goals.map(g => g.id);
+  const weekNo = getWeekNumberOfMonth(new Date());
+  const weeklies = getWeekly().filter(w => goalIds.includes(w.goalId) && w.week === weekNo);
+
+  let weekHtml = '';
+  if(weeklies.length === 0){
+    weekHtml = '<div style="text-align:center;padding:10px 0;color:var(--text-3);font-size:12px">本月第'+weekNo+'周暂无任务</div>';
+  } else {
+    weeklies.forEach(w => {
+      const wTodos = todos.filter(t => t.weeklyId === w.id);
+      const wDone = wTodos.filter(t => t.completed).length;
+      const wTotal = wTodos.length;
+      const pct = wTotal > 0 ? Math.round(wDone/wTotal*100) : (w.completed ? 100 : 0);
+      const fillColor = pct >= 100 ? 'var(--success)' : pct > 0 ? 'var(--primary)' : 'var(--text-3)';
+      weekHtml += '<div class="week-task-item">'
+        + '<div class="week-task-head">'
+        + '<div class="week-task-title">'+escapeHtml(w.title)+'</div>'
+        + '<div class="week-task-badge">'+(wTotal > 0 ? wDone+'/'+wTotal : (w.completed?'已完成':'待拆解'))+'</div>'
+        + '</div>'
+        + '<div class="week-task-bar"><div class="week-task-fill" style="width:'+pct+'%;background:'+fillColor+'"></div></div>'
+        + '</div>';
+    });
+  }
+
+  /* --- Month countdown --- */
+  const daysLeft = lastDate - (isCurMonth ? todayDate.getDate() : 0);
+  const allMonthTodos = todos.filter(t => t.date >= mStart && t.date <= mEnd);
+  const monthDone = allMonthTodos.filter(t => t.completed).length;
+  const monthTotal = allMonthTodos.length;
+  const monthPct = monthTotal > 0 ? Math.round(monthDone/monthTotal*100) : 0;
+  const goalsDone = goals.filter(g => g.completed).length;
+
+  /* --- Quote --- */
+  const qIdx = new Date().getDate() % QUOTES.length;
+  const q = QUOTES[qIdx];
+
+  el.innerHTML =
+    /* Mini Calendar */
+    '<div class="side-card">'
+    + '<div class="mini-cal-head">'
+    + '<div class="mini-cal-title">'+y+'年'+(m+1)+'月</div>'
+    + '<div style="display:flex;gap:2px">'
+    + '<button class="mini-cal-nav" onclick="changeCalMonth(-1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>'
+    + '<button class="mini-cal-nav" onclick="changeCalMonth(1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></button>'
+    + '</div></div>'
+    + calHtml
+    + '<div style="display:flex;gap:10px;margin-top:10px;font-size:10px;color:var(--text-3);justify-content:center">'
+    + '<span style="display:flex;align-items:center;gap:3px"><span class="cal-dot done" style="position:static"></span>已完成</span>'
+    + '<span style="display:flex;align-items:center;gap:3px"><span class="cal-dot mixed" style="position:static"></span>部分</span>'
+    + '<span style="display:flex;align-items:center;gap:3px"><span class="cal-dot pending" style="position:static"></span>待处理</span>'
+    + '</div>'
+    + '</div>'
+
+    /* Quote */
+    + '<div class="quote-card">'
+    + '<div class="quote-text">"'+q.t+'"</div>'
+    + '<div class="quote-author">— '+q.a+'</div>'
+    + '</div>'
+
+    /* This week's tasks */
+    + '<div class="side-card">'
+    + '<div class="side-card-title">'
+    + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>'
+    + '本月第'+weekNo+'周任务</div>'
+    + weekHtml
+    + '</div>'
+
+    /* Month countdown */
+    + '<div class="side-card">'
+    + '<div class="side-card-title">'
+    + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>'
+    + '月末倒计时</div>'
+    + '<div class="countdown-grid">'
+    + '<div class="countdown-item"><div class="countdown-num" style="color:var(--danger)">'+daysLeft+'</div><div class="countdown-label">本月剩余天数</div></div>'
+    + '<div class="countdown-item"><div class="countdown-num" style="color:var(--primary)">'+monthPct+'%</div><div class="countdown-label">待办完成率</div></div>'
+    + '<div class="countdown-item"><div class="countdown-num" style="color:var(--success)">'+goalsDone+'/'+goals.length+'</div><div class="countdown-label">目标完成</div></div>'
+    + '<div class="countdown-item"><div class="countdown-num" style="color:var(--teal)">'+monthDone+'</div><div class="countdown-label">已完成待办</div></div>'
+    + '</div></div>';
+}
+
+/* ========== Render Sidebar ========== */
+function renderSidebar(){
+  const el = document.getElementById('sidebar');
+  if(!el) return;
+  const today = todayStr();
+  const todos = getTodos();
+  const todayTodos = todos.filter(t => t.date === today);
+  const todayDone = todayTodos.filter(t => t.completed).length;
+  const todayTotal = todayTodos.length;
+  const todayPct = todayTotal > 0 ? Math.round(todayDone/todayTotal*100) : 0;
+
+  const mk = monthKey(new Date());
+  const goals = getGoals().filter(g => g.month === mk);
+  const goalIds = goals.map(g => g.id);
+  const weeklies = getWeekly().filter(w => goalIds.includes(w.goalId));
+  const weekliesDone = weeklies.filter(w => w.completed).length;
+  const mStart = fmtDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+  const mEnd = fmtDate(new Date(new Date().getFullYear(), new Date().getMonth()+1, 0));
+  const monthTodos = todos.filter(t => t.date >= mStart && t.date <= mEnd);
+  const monthDone = monthTodos.filter(t => t.completed).length;
+  const monthPending = monthTodos.filter(t => !t.completed && t.date < today).length;
+  const streak = calcStreak();
+
+  const r = 42;
+  const circ = 2 * Math.PI * r;
+  const offset = circ * (1 - todayPct/100);
+  const gc = todayPct >= 75 ? 'var(--success)' : todayPct >= 50 ? 'var(--primary)' : todayPct >= 25 ? 'var(--warning)' : 'var(--danger)';
+
+  // Recently completed (last 4)
+  const recentDone = todos.filter(t => t.completed).sort((a,b) => (b.completedAt||0)-(a.completedAt||0)).slice(0,4);
+
+  let recentHtml = '';
+  if(recentDone.length === 0){
+    recentHtml = '<div style="text-align:center;padding:12px 0;color:var(--text-3);font-size:12px">还没有完成的事项</div>';
+  } else {
+    recentDone.forEach(t => {
+      const c = t.priority === 'P0' ? 'var(--p0)' : t.priority === 'P1' ? 'var(--p1)' : 'var(--p2)';
+      const time = t.completedAt ? fmtDate(new Date(t.completedAt)).slice(5) : t.date.slice(5);
+      recentHtml += '<div class="side-recent-item">'
+        + '<div class="side-recent-dot" style="background:'+c+'"></div>'
+        + '<div class="side-recent-title">'+escapeHtml(t.title)+'</div>'
+        + '<div class="side-recent-time">'+time+'</div>'
+        + '</div>';
+    });
+  }
+
+  el.innerHTML =
+    '<div class="side-card">'
+    + '<div class="side-card-title">'
+    + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>'
+    + '今日进度</div>'
+    + '<div class="side-gauge">'
+    + '<svg viewBox="0 0 100 100">'
+    + '<circle cx="50" cy="50" r="'+r+'" fill="none" stroke="#E8EAED" stroke-width="7"/>'
+    + '<circle cx="50" cy="50" r="'+r+'" fill="none" stroke="'+gc+'" stroke-width="7"'
+    + ' stroke-dasharray="'+circ.toFixed(2)+'" stroke-dashoffset="'+offset.toFixed(2)+'"'
+    + ' transform="rotate(-90 50 50)" stroke-linecap="round" style="transition:stroke-dashoffset .5s"/>'
+    + '<text x="50" y="50" text-anchor="middle" font-size="17" font-weight="800" fill="var(--text)" dy=".35em">'+todayPct+'%</text>'
+    + '<text x="50" y="68" text-anchor="middle" font-size="9" fill="var(--text-2)">'+todayDone+'/'+todayTotal+'</text>'
+    + '</svg></div></div>'
+
+    + '<div class="side-card streak-card">'
+    + '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>'
+    + '<div class="streak-num">'+streak+'</div>'
+    + '<div class="streak-label">连续完成天数</div>'
+    + '</div>'
+
+    + '<div class="side-card">'
+    + '<div class="side-card-title">'
+    + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M7 16l4-4 4 4 5-5"/></svg>'
+    + '本月速览</div>'
+    + '<div class="side-stat-grid">'
+    + '<div class="side-stat-item"><div class="side-stat-num" style="color:var(--primary)">'+goals.length+'</div><div class="side-stat-label">月目标</div></div>'
+    + '<div class="side-stat-item"><div class="side-stat-num" style="color:var(--teal)">'+weekliesDone+'/'+weeklies.length+'</div><div class="side-stat-label">周任务</div></div>'
+    + '<div class="side-stat-item"><div class="side-stat-num" style="color:var(--success)">'+monthDone+'</div><div class="side-stat-label">已完成</div></div>'
+    + '<div class="side-stat-item"><div class="side-stat-num" style="color:var(--danger)">'+monthPending+'</div><div class="side-stat-label">待处理</div></div>'
+    + '</div></div>'
+
+    + '<div class="side-card">'
+    + '<div class="side-card-title">'
+    + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>'
+    + '快捷操作</div>'
+    + '<button class="side-action" onclick="switchTab(\'goals\');setTimeout(function(){openModal(\'goal\')},100)">'
+    + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>'
+    + '新增月目标</button>'
+    + '<button class="side-action" onclick="switchTab(\'todos\');setTimeout(function(){openModal(\'todo\')},100)">'
+    + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>'
+    + '新增待办</button>'
+    + '</div>'
+
+    + '<div class="side-card">'
+    + '<div class="side-card-title">'
+    + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>'
+    + '最近完成</div>'
+    + recentHtml
+    + '</div>';
+}
+
+function calcStreak(){
+  const todos = getTodos().filter(t => t.completed);
+  const dates = new Set();
+  todos.forEach(t => {
+    if(t.completedAt) dates.add(fmtDate(new Date(t.completedAt)));
+    dates.add(t.date);
+  });
+  let streak = 0;
+  let d = new Date();
+  while(true){
+    const ds = fmtDate(d);
+    if(dates.has(ds)){
+      streak++;
+      d = new Date(d.getTime() - 86400000);
+    } else if(streak === 0 && ds === todayStr()){
+      d = new Date(d.getTime() - 86400000);
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
+
+/* ========== Render All ========== */
+function renderAll(){
+  renderToday();
+  renderGoals();
+  renderTodos();
+  renderDashboard();
+  renderLeftSidebar();
+  renderSidebar();
+  updateBackupReminder();
+}
+
+/* ========== Init ========== */
+function init(){
+  // Header date
+  const now = new Date();
+  document.getElementById('headerDate').textContent = monthLabel(now) + todayStr().slice(8) + '日';
+
+  // Init sample data
+  initSampleData();
+
+  // Rollforward overdue
+  rollforwardOverdue();
+
+  // Render
+  renderAll();
+
+  // ESC to close modal
+  document.addEventListener('keydown', e => {
+    if(e.key === 'Escape'){
+      closeModal();
+      closeConfirm();
+    }
+  });
+
+  // Close confirm on overlay click
+  document.getElementById('confirmOverlay').addEventListener('click', e => {
+    if(e.target === document.getElementById('confirmOverlay')) closeConfirm();
+  });
+}
+
+init();
+</script>
+</body>
+</html>
