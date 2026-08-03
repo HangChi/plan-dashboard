@@ -186,10 +186,20 @@ svg{display:block;flex-shrink:0}
 .goal-card{
   border:1px solid var(--border);border-radius:var(--radius-sm);
   margin:0 16px 12px;overflow:hidden;
+  transition:box-shadow .15s, border-color .15s;
 }
+.goal-card.dragging{opacity:.4;box-shadow:var(--shadow)}
+.goal-card.drag-over{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary-light)}
 .goal-card-header{
   padding:14px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
 }
+.goal-drag-handle{
+  cursor:grab;color:var(--text-3);flex-shrink:0;padding:2px 0;margin-right:2px;
+  display:flex;align-items:center;transition:color .15s;
+}
+.goal-drag-handle:hover{color:var(--text-2)}
+.goal-drag-handle svg{width:16px;height:16px}
+.goal-drag-handle:active{cursor:grabbing}
 .goal-card-title{font-size:15px;font-weight:600;flex:1}
 .goal-progress-mini{display:flex;align-items:center;gap:8px;margin-top:6px}
 .goal-progress-bar{flex:1;height:6px;background:var(--bg);border-radius:3px;overflow:hidden}
@@ -912,6 +922,7 @@ const IC = {
   edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
   empty: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>',
   plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>',
+  grip: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/></svg>',
 };
 
 /* ========== Render: Today Section ========== */
@@ -1003,8 +1014,9 @@ function renderGoals(){
     const completedWeekly = weeklies.filter(w => w.completed).length;
     const pct = weeklies.length > 0 ? Math.round(completedWeekly/weeklies.length*100) : 0;
 
-    html += '<div class="goal-card">';
+    html += '<div class="goal-card" data-goal-id="'+g.id+'">';
     html += '<div class="goal-card-header">';
+    html += '<div class="goal-drag-handle" draggable="true" data-goal-id="'+g.id+'">'+IC.grip+'</div>';
     html += '<div style="flex:1">';
     html += '<div class="goal-card-title">'+escapeHtml(g.title)+'</div>';
     html += '<div class="goal-progress-mini">';
@@ -1922,6 +1934,53 @@ function renderAll(){
 }
 
 /* ========== Init ========== */
+/* ========== Drag & Drop ========== */
+let dragSrcId = null;
+
+function handleDragStart(e){
+  const card = e.target.closest('.goal-card');
+  if(!card) return;
+  dragSrcId = card.dataset.goalId;
+  card.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', dragSrcId);
+}
+
+function handleDragEnd(e){
+  const card = e.target.closest('.goal-card');
+  if(card) card.classList.remove('dragging');
+  dragSrcId = null;
+  document.querySelectorAll('.goal-card.drag-over').forEach(c => c.classList.remove('drag-over'));
+}
+
+function handleDragOver(e){
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  const card = e.target.closest('.goal-card');
+  if(!card || card.dataset.goalId === dragSrcId) return;
+  document.querySelectorAll('.goal-card.drag-over').forEach(c => c.classList.remove('drag-over'));
+  card.classList.add('drag-over');
+}
+
+function handleDrop(e){
+  e.preventDefault();
+  const card = e.target.closest('.goal-card');
+  if(!card) return;
+  const targetId = card.dataset.goalId;
+  if(!dragSrcId || dragSrcId === targetId) return;
+  card.classList.remove('drag-over');
+
+  const goals = getGoals();
+  const srcIdx = goals.findIndex(g => g.id === dragSrcId);
+  const dstIdx = goals.findIndex(g => g.id === targetId);
+  if(srcIdx === -1 || dstIdx === -1) return;
+
+  const [moved] = goals.splice(srcIdx, 1);
+  goals.splice(dstIdx, 0, moved);
+  saveGoals(goals);
+  renderAll();
+}
+
 function init(){
   // Header date
   const now = new Date();
@@ -1935,6 +1994,13 @@ function init(){
 
   // Render
   renderAll();
+
+  // Drag & drop event delegation on goals list
+  const goalsList = document.getElementById('goalsList');
+  goalsList.addEventListener('dragstart', handleDragStart);
+  goalsList.addEventListener('dragend', handleDragEnd);
+  goalsList.addEventListener('dragover', handleDragOver);
+  goalsList.addEventListener('drop', handleDrop);
 
   // ESC to close modal
   document.addEventListener('keydown', e => {
