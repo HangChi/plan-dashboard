@@ -930,10 +930,12 @@ function renderToday(){
   const todos = getTodos();
   const today = todayStr();
   const tomorrow = fmtDate(new Date(Date.now()+86400000));
+  const order = { P0:0, P1:1, P2:2 };
+  const sortByPriority = (arr) => arr.sort((a,b) => (order[a.priority]||2) - (order[b.priority]||2));
 
-  const overdue = todos.filter(t => !t.completed && t.rolledFrom);
-  const todayItems = todos.filter(t => t.date === today && !t.rolledFrom);
-  const upcoming = todos.filter(t => t.date === tomorrow && !t.completed);
+  const overdue = sortByPriority(todos.filter(t => !t.completed && t.rolledFrom));
+  const todayItems = sortByPriority(todos.filter(t => t.date === today && !t.rolledFrom));
+  const upcoming = sortByPriority(todos.filter(t => t.date === tomorrow && !t.completed));
 
   const pendingCount = todos.filter(t => t.date <= today && !t.completed).length;
   document.getElementById('todayBadge').textContent = pendingCount;
@@ -1467,6 +1469,7 @@ function renderTodoForm(editId){
   const priority = isEdit ? todo.priority : 'P1';
   const date = isEdit ? todo.date : todayStr();
   const linkedWeekly = isEdit ? todo.weeklyId : '';
+  selectedPriority = priority; // sync global state with form state
 
   // Get current month's weeklies for linking
   const mk = monthKey(state.goalMonth);
