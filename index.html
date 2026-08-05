@@ -241,6 +241,27 @@ svg{display:block;flex-shrink:0}
 .todo-date-label{font-size:15px;font-weight:600}
 .todo-date-sub{font-size:12px;color:var(--text-2)}
 
+.todo-summary{
+  background:var(--card);border-radius:var(--radius-sm);padding:14px 16px;
+  margin-bottom:12px;box-shadow:var(--shadow);
+  display:flex;align-items:center;gap:16px;
+}
+.todo-summary-ring{
+  width:56px;height:56px;flex-shrink:0;position:relative;
+}
+.todo-summary-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.todo-summary-ring text{font-family:inherit}
+.todo-summary-ring-center{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;font-weight:700;
+}
+.todo-summary-info{flex:1;min-width:0}
+.todo-summary-title{font-size:13px;color:var(--text-2);margin-bottom:4px}
+.todo-summary-stats{display:flex;gap:14px;font-size:13px}
+.todo-summary-stats .stat-item{display:flex;align-items:center;gap:4px}
+.todo-summary-stats .stat-dot{width:8px;height:8px;border-radius:50%}
+.todo-summary-empty{padding:6px 0;color:var(--text-3);font-size:13px}
+
 .todo-item{
   display:flex;align-items:center;gap:12px;padding:12px 16px;
   background:var(--card);border-radius:var(--radius-sm);margin-bottom:8px;
@@ -668,6 +689,7 @@ svg{display:block;flex-shrink:0}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
       </button>
     </div>
+    <div id="todoDateSummary"></div>
     <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
       <button class="add-btn" onclick="openModal('todo')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
@@ -1075,6 +1097,36 @@ function renderTodos(){
   const ds = fmtDate(state.todoDate);
   document.getElementById('todoDateLabel').textContent = ds;
   document.getElementById('todoDateSub').textContent = weekdayCN(ds) + (ds === todayStr() ? ' · 今天' : '');
+
+  /* Day completion summary */
+  const dayTodos = getTodos().filter(t => t.date === ds);
+  const dayDone = dayTodos.filter(t => t.completed).length;
+  const dayTotal = dayTodos.length;
+  const dayPct = dayTotal > 0 ? Math.round(dayDone/dayTotal*100) : 0;
+  const sumEl = document.getElementById('todoDateSummary');
+  if(dayTotal === 0){
+    sumEl.innerHTML = '<div class="todo-summary-empty">当天还没有待办</div>';
+  } else {
+    const r = 24;
+    const circ = 2 * Math.PI * r;
+    const offset = circ * (1 - dayPct/100);
+    const ringColor = dayPct >= 100 ? 'var(--success)' : dayPct >= 50 ? 'var(--primary)' : dayPct > 0 ? 'var(--warning)' : 'var(--text-3)';
+    sumEl.innerHTML =
+      '<div class="todo-summary">'
+      + '<div class="todo-summary-ring">'
+      +   '<svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="'+r+'" fill="none" stroke="#E8EAED" stroke-width="5"/><circle cx="30" cy="30" r="'+r+'" fill="none" stroke="'+ringColor+'" stroke-width="5" stroke-dasharray="'+circ.toFixed(2)+'" stroke-dashoffset="'+offset.toFixed(2)+'" stroke-linecap="round"/></svg>'
+      +   '<div class="todo-summary-ring-center" style="font-size:13px">'+dayPct+'%</div>'
+      + '</div>'
+      + '<div class="todo-summary-info">'
+      +   '<div class="todo-summary-title">完成情况</div>'
+      +   '<div class="todo-summary-stats">'
+      +     '<div class="stat-item"><span class="stat-dot" style="background:var(--success)"></span>已完成 '+dayDone+'</div>'
+      +     '<div class="stat-item"><span class="stat-dot" style="background:var(--text-3)"></span>待处理 '+(dayTotal - dayDone)+'</div>'
+      +     '<div class="stat-item" style="color:var(--text-2)">合计 '+dayTotal+'</div>'
+      +   '</div>'
+      + '</div>'
+      + '</div>';
+  }
 
   const todos = getTodos().filter(t => t.date === ds);
   if(todos.length === 0){
@@ -1667,7 +1719,11 @@ function changeCalMonth(dir){
 
 function calDayClick(dateStr){
   state.todoDate = parseDate(dateStr);
+  /* Sync mini-cal month to clicked date so the cell stays highlighted */
+  state.calMonth = new Date(state.todoDate.getFullYear(), state.todoDate.getMonth(), 1);
   switchTab('todos');
+  renderLeftSidebar();
+  window.scrollTo({top:0, behavior:'smooth'});
 }
 
 function renderLeftSidebar(){
@@ -1701,8 +1757,18 @@ function renderLeftSidebar(){
   calHtml += '</div><div class="cal-grid">';
 
   // Leading blanks (prev month)
+  const prevM = m === 0 ? 11 : m - 1;
+  const prevY = m === 0 ? y - 1 : y;
   for(let i = firstDay; i > 0; i--){
-    calHtml += '<div class="cal-cell other-month">'+(prevLastDate - i + 1)+'</div>';
+    const day = prevLastDate - i + 1;
+    const pds = prevY+'-'+pad(prevM+1)+'-'+pad(day);
+    const pinfo = todoMap[pds];
+    let pdot = '';
+    if(pinfo){
+      const pc = pinfo.pending > 0 && pinfo.done > 0 ? 'mixed' : pinfo.pending > 0 ? 'pending' : 'done';
+      pdot = '<div class="cal-dot '+pc+'"></div>';
+    }
+    calHtml += '<div class="cal-cell other-month" onclick="calDayClick(\''+pds+'\')">'+day+pdot+'</div>';
   }
   // Current month days
   for(let d = 1; d <= lastDate; d++){
@@ -1723,8 +1789,17 @@ function renderLeftSidebar(){
   // Trailing blanks (next month)
   const totalCells = firstDay + lastDate;
   const trailing = (7 - (totalCells % 7)) % 7;
+  const nextM = m === 11 ? 0 : m + 1;
+  const nextY = m === 11 ? y + 1 : y;
   for(let i = 1; i <= trailing; i++){
-    calHtml += '<div class="cal-cell other-month">'+i+'</div>';
+    const nds = nextY+'-'+pad(nextM+1)+'-'+pad(i);
+    const ninfo = todoMap[nds];
+    let ndot = '';
+    if(ninfo){
+      const nc = ninfo.pending > 0 && ninfo.done > 0 ? 'mixed' : ninfo.pending > 0 ? 'pending' : 'done';
+      ndot = '<div class="cal-dot '+nc+'"></div>';
+    }
+    calHtml += '<div class="cal-cell other-month" onclick="calDayClick(\''+nds+'\')">'+i+ndot+'</div>';
   }
   calHtml += '</div>';
 
